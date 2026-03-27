@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const videos = await fetchChannelVideos(50);
+    const videos = await fetchChannelVideos();
     const supabase = getSupabaseAdmin();
 
     const rows = videos.map((v) => ({
