@@ -1,0 +1,39 @@
+import { NextResponse } from "next/server";
+import { parseQuestion } from "@/lib/telegram";
+import { getSupabaseAdmin } from "@/lib/supabase";
+
+export async function POST(req: Request) {
+  // Verify Telegram webhook secret
+  const secret = req.headers.get("x-telegram-bot-api-secret-token");
+  if (secret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const update = await req.json();
+    const parsed = parseQuestion(update);
+
+    // Ignore non-message updates or empty messages
+    if (!parsed) return NextResponse.json({ ok: true });
+
+    const supabase = getSupabaseAdmin();
+
+    // Save question — admin will answer it from the panel
+    const { error } = await supabase.from("qa").insert({
+      question: parsed.text,
+      answer: null,
+      source: "telegram",
+      telegram_message_id: parsed.messageId,
+      published: false, // Admin reviews before publishing
+    });
+
+    if (error) {
+      console.error("Supabase insert error:", error);
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error("Telegram webhook error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
