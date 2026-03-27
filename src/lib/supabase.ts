@@ -65,6 +65,8 @@ export interface QA {
   section_id: string | null;
   submitter_name: string | null;
   submitter_email: string | null;
+  user_id: string | null;
+  is_private: boolean;
   published: boolean;
   created_at: string;
 }
