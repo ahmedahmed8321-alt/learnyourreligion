@@ -63,7 +63,7 @@ export default function AdminSummariesPage() {
   }
 
   // Collect unique categories for datalist
-  const categories = [...new Set(summaries.map((s) => s.category).filter(Boolean))];
+  const categories = Array.from(new Set(summaries.map((s) => s.category).filter(Boolean)));
 
   return (
     <div className="max-w-3xl">
