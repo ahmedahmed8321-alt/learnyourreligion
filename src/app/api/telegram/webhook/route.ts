@@ -2,6 +2,28 @@ import { NextResponse } from "next/server";
 import { parseQuestion } from "@/lib/telegram";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
+/** GET = register the webhook with Telegram */
+export async function GET(req: Request) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  const url = new URL(req.url);
+  const webhookUrl = `${url.origin}/api/telegram/webhook`;
+
+  const res = await fetch(
+    `https://api.telegram.org/bot${token}/setWebhook`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: webhookUrl,
+        secret_token: secret,
+      }),
+    }
+  );
+  const data = await res.json();
+  return NextResponse.json({ webhookUrl, telegram: data });
+}
+
 export async function POST(req: Request) {
   // Verify Telegram webhook secret
   const secret = req.headers.get("x-telegram-bot-api-secret-token");
