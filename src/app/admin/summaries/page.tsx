@@ -62,12 +62,76 @@ export default function AdminSummariesPage() {
     load();
   }
 
+  const [editCat, setEditCat] = useState<{ old: string; val: string } | null>(null);
+
   // Collect unique categories for datalist
-  const categories = Array.from(new Set(summaries.map((s) => s.category).filter(Boolean)));
+  const categories = Array.from(new Set(summaries.map((s) => s.category).filter(Boolean))) as string[];
+
+  async function renameCategory(oldName: string, newName: string) {
+    if (!newName.trim() || newName === oldName) { setEditCat(null); return; }
+    // Update all summaries with this category
+    const res = await fetch("/api/summaries", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ oldCategory: oldName, newCategory: newName.trim() }),
+    });
+    if (res.ok) { load(); }
+    setEditCat(null);
+  }
+
+  async function deleteCategory(catName: string) {
+    if (!confirm(`حذف التصنيف "${catName}"؟ سيتم إزالة التصنيف من الملفات (بدون حذف الملفات نفسها)`)) return;
+    await fetch("/api/summaries", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ oldCategory: catName, newCategory: "" }),
+    });
+    load();
+  }
 
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-green-900 mb-6">الملخصات (PDF)</h1>
+
+      {/* Category management */}
+      {categories.length > 0 && (
+        <div className="bg-white rounded-xl shadow p-5 mb-6">
+          <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <span>📁</span> إدارة التصنيفات ({categories.length})
+          </h2>
+          <div className="space-y-2">
+            {categories.map((cat) => {
+              const count = summaries.filter((s) => s.category === cat).length;
+              const isEditing = editCat?.old === cat;
+              return (
+                <div key={cat} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2.5">
+                  {isEditing ? (
+                    <input
+                      autoFocus
+                      value={editCat.val}
+                      onChange={(e) => setEditCat({ ...editCat, val: e.target.value })}
+                      onKeyDown={(e) => { if (e.key === "Enter") renameCategory(cat, editCat.val); if (e.key === "Escape") setEditCat(null); }}
+                      onBlur={() => renameCategory(cat, editCat.val)}
+                      className="flex-1 border border-green-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  ) : (
+                    <span className="flex-1 text-sm font-medium text-gray-800">{cat}</span>
+                  )}
+                  <span className="text-xs text-gray-400 shrink-0">{count} ملف</span>
+                  {!isEditing && (
+                    <>
+                      <button onClick={() => setEditCat({ old: cat, val: cat })}
+                        className="text-blue-500 hover:text-blue-700 text-xs">تعديل</button>
+                      <button onClick={() => deleteCategory(cat)}
+                        className="text-red-500 hover:text-red-700 text-xs">حذف</button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Upload form */}
       <form onSubmit={handleUpload} className="bg-white rounded-xl shadow p-6 mb-8 space-y-4">
