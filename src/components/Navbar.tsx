@@ -4,15 +4,24 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import type { User } from "@supabase/supabase-js";
 
-const links = [
+const publicLinks = [
   { href: "/", label: "الرئيسية" },
   { href: "/videos", label: "المقاطع" },
   { href: "/articles", label: "المقالات" },
   { href: "/summaries", label: "ملخصات" },
   { href: "/qa", label: "س & ج" },
+];
+
+const adminLinks = [
+  { href: "/admin", label: "الرئيسية" },
+  { href: "/admin/videos", label: "المقاطع" },
+  { href: "/admin/articles", label: "المقالات" },
+  { href: "/admin/summaries", label: "الملخصات" },
+  { href: "/admin/qa", label: "س & ج" },
 ];
 
 export default function Navbar() {
@@ -22,6 +31,12 @@ export default function Navbar() {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const { data: adminSession } = useSession();
+
+  // User is "logged in" if either Supabase user or NextAuth admin
+  const isLoggedIn = !!user || !!adminSession;
+  const displayName = user?.user_metadata?.name ?? adminSession?.user?.name ?? "م";
+  const isAdmin = !!adminSession;
 
   useEffect(() => {
     const supabase = createSupabaseBrowser();
@@ -50,9 +65,14 @@ export default function Navbar() {
   useEffect(() => { setOpen(false); setShowMenu(false); }, [pathname]);
 
   async function handleSignOut() {
-    const supabase = createSupabaseBrowser();
-    await supabase.auth.signOut();
-    setUser(null);
+    if (adminSession) {
+      await nextAuthSignOut({ callbackUrl: "/" });
+    }
+    if (user) {
+      const supabase = createSupabaseBrowser();
+      await supabase.auth.signOut();
+      setUser(null);
+    }
     setShowMenu(false);
   }
 
@@ -64,7 +84,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group shrink-0">
+          <Link href={isAdmin ? "/admin" : "/"} className="flex items-center gap-3 group shrink-0">
             <div className="relative">
               <Image src="/logo.png" alt="الشيخ محمود لاشين"
                 width={44} height={44}
@@ -81,7 +101,7 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-1">
-            {links.map((l) => {
+            {(isAdmin ? adminLinks : publicLinks).map((l) => {
               const active = pathname === l.href || (l.href !== "/" && pathname.startsWith(l.href));
               return (
                 <Link key={l.href} href={l.href}
@@ -103,22 +123,34 @@ export default function Navbar() {
               <span className="hidden md:inline">انضم للقناة</span>
             </a>
 
-            {user ? (
+            {isLoggedIn ? (
               <div className="relative" ref={menuRef}>
                 <button onClick={() => setShowMenu(!showMenu)}
                   className="bg-yellow-500 hover:bg-yellow-400 text-green-900 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors shadow"
-                  title={user.user_metadata?.name ?? "حسابي"}>
-                  {(user.user_metadata?.name ?? "م")[0]}
+                  title={displayName}>
+                  {displayName[0]}
                 </button>
                 {showMenu && (
                   <div className="absolute left-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-2 min-w-[160px] z-50">
-                    <Link href="/profile"
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      حسابي
-                    </Link>
+                    {user && (
+                      <Link href="/profile"
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        حسابي
+                      </Link>
+                    )}
+                    {isAdmin && (
+                      <Link href="/admin"
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        لوحة التحكم
+                      </Link>
+                    )}
                     <div className="border-t border-gray-100 my-1" />
                     <button onClick={handleSignOut}
                       className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-right">
@@ -155,7 +187,7 @@ export default function Navbar() {
       {/* Mobile menu */}
       {open && (
         <div className="lg:hidden bg-green-950 border-t border-green-800 px-4 py-3 space-y-1">
-          {links.map((l) => {
+          {(isAdmin ? adminLinks : publicLinks).map((l) => {
             const active = pathname === l.href || (l.href !== "/" && pathname.startsWith(l.href));
             return (
               <Link key={l.href} href={l.href}
@@ -172,7 +204,7 @@ export default function Navbar() {
               className="flex items-center gap-2 bg-green-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex-1 justify-center">
               <WhatsAppIcon /> انضم للقناة
             </a>
-            {user ? (
+            {isLoggedIn ? (
               <button onClick={handleSignOut}
                 className="flex items-center justify-center border border-red-600 text-red-400 px-4 py-2.5 rounded-xl text-sm flex-1">
                 تسجيل الخروج

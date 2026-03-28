@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import Image from "next/image";
 import type { Video } from "@/lib/supabase";
+import SyncButton from "./SyncButton";
 
 export default async function AdminVideosPage() {
   const session = await getServerSession(authOptions);
@@ -19,12 +20,9 @@ export default async function AdminVideosPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-green-900">المقاطع المرئية</h1>
-        <a href="/api/youtube/sync"
-          className="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-500 text-sm font-medium transition-colors">
-          🔄 مزامنة من يوتيوب
-        </a>
+        <SyncButton />
       </div>
 
       <p className="text-gray-400 text-sm mb-4">
