@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
@@ -19,9 +20,15 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    // Redirect admin to admin login
+    // Admin: sign in via NextAuth directly (no redirect to /admin/login)
     if (ADMIN_EMAIL && email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-      router.push("/admin/login");
+      const res = await signIn("credentials", { email, password, redirect: false });
+      if (res?.error) {
+        setError("بيانات الدخول غير صحيحة");
+        setLoading(false);
+      } else {
+        router.push("/admin");
+      }
       return;
     }
 

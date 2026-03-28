@@ -8,17 +8,27 @@ interface Summary {
   category: string | null; created_at: string;
 }
 
+interface Category {
+  id: string; name: string; type: string; order_index: number; created_at: string;
+}
+
 export default function AdminSummariesPage() {
   const [summaries, setSummaries] = useState<Summary[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState("");
   const [form, setForm] = useState({ title: "", description: "", category: "" });
+  const [search, setSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function load() {
-    const res = await fetch("/api/summaries");
-    setSummaries(await res.json());
+    const [sumRes, catRes] = await Promise.all([
+      fetch("/api/summaries"),
+      fetch("/api/categories?type=summary"),
+    ]);
+    setSummaries(await sumRes.json());
+    setCategories(await catRes.json());
     setLoading(false);
   }
 
@@ -27,7 +37,7 @@ export default function AdminSummariesPage() {
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     const file = fileRef.current?.files?.[0];
-    if (!file) { setProgress("اختر ملف PDF أولاً"); return; }
+    if (!file) { setProgress("اختر ملفاً أولاً"); return; }
 
     setUploading(true);
     setProgress("جاري رفع الملف...");
@@ -62,53 +72,50 @@ export default function AdminSummariesPage() {
     load();
   }
 
-  const [editCat, setEditCat] = useState<{ old: string; val: string } | null>(null);
+  const [editCat, setEditCat] = useState<{ id: string; val: string } | null>(null);
   const [newCat, setNewCat] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
 
-  // Collect unique categories for datalist
-  const categories = Array.from(new Set(summaries.map((s) => s.category).filter(Boolean))) as string[];
-
   async function addCategory() {
     const name = newCat.trim();
-    if (!name || categories.includes(name)) { setNewCat(""); setShowAddCat(false); return; }
-    // Create a placeholder record to register the category, or just add to local state
-    // Since categories are derived from summaries, we'll use PATCH to create a marker
-    // Actually, we just need to track categories locally until a file uses it
-    // Simpler: just add it to the datalist so user can select it when uploading
-    // But the user wants it to persist. Let's use a different approach:
-    // We'll store categories as a JSON array in a special summary record... no that's hacky.
-    // Best: just allow creating by typing in the upload form. The section management
-    // lets you rename/delete. For "add", we open the input and let them type.
-    setForm((prev) => ({ ...prev, category: name }));
+    if (!name) { setNewCat(""); setShowAddCat(false); return; }
+    await fetch("/api/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, type: "summary" }),
+    });
     setNewCat("");
     setShowAddCat(false);
+    load();
   }
 
-  async function renameCategory(oldName: string, newName: string) {
-    if (!newName.trim() || newName === oldName) { setEditCat(null); return; }
-    const res = await fetch("/api/summaries", {
+  async function renameCategory(id: string, newName: string) {
+    if (!newName.trim()) { setEditCat(null); return; }
+    await fetch(`/api/categories/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ oldCategory: oldName, newCategory: newName.trim() }),
+      body: JSON.stringify({ name: newName.trim() }),
     });
-    if (res.ok) { load(); }
     setEditCat(null);
+    load();
   }
 
-  async function deleteCategory(catName: string) {
-    if (!confirm(`حذف التصنيف "${catName}"؟ سيتم إزالة التصنيف من الملفات (بدون حذف الملفات نفسها)`)) return;
+  async function deleteCategory(id: string, catName: string) {
+    if (!confirm(`حذف التصنيف "${catName}"؟`)) return;
+    // Remove category from summaries that use it
     await fetch("/api/summaries", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ oldCategory: catName, newCategory: "" }),
     });
+    // Delete the category record
+    await fetch(`/api/categories/${id}`, { method: "DELETE" });
     load();
   }
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold text-green-900 mb-6">الملخصات (PDF)</h1>
+      <h1 className="text-2xl font-bold text-green-900 mb-6">الملخصات والملفات</h1>
 
       {/* Category management */}
       <div className="bg-white rounded-xl shadow p-5 mb-6">
@@ -147,28 +154,28 @@ export default function AdminSummariesPage() {
         ) : (
           <div className="space-y-2">
             {categories.map((cat) => {
-              const count = summaries.filter((s) => s.category === cat).length;
-              const isEditing = editCat?.old === cat;
+              const count = summaries.filter((s) => s.category === cat.name).length;
+              const isEditing = editCat?.id === cat.id;
               return (
-                <div key={cat} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2.5">
+                <div key={cat.id} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2.5">
                   {isEditing ? (
                     <input
                       autoFocus
                       value={editCat.val}
                       onChange={(e) => setEditCat({ ...editCat, val: e.target.value })}
-                      onKeyDown={(e) => { if (e.key === "Enter") renameCategory(cat, editCat.val); if (e.key === "Escape") setEditCat(null); }}
-                      onBlur={() => renameCategory(cat, editCat.val)}
+                      onKeyDown={(e) => { if (e.key === "Enter") renameCategory(cat.id, editCat.val); if (e.key === "Escape") setEditCat(null); }}
+                      onBlur={() => renameCategory(cat.id, editCat.val)}
                       className="flex-1 border border-green-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   ) : (
-                    <span className="flex-1 text-sm font-medium text-gray-800">{cat}</span>
+                    <span className="flex-1 text-sm font-medium text-gray-800">{cat.name}</span>
                   )}
                   <span className="text-xs text-gray-400 shrink-0">{count} ملف</span>
                   {!isEditing && (
                     <>
-                      <button onClick={() => setEditCat({ old: cat, val: cat })}
+                      <button onClick={() => setEditCat({ id: cat.id, val: cat.name })}
                         className="text-blue-500 hover:text-blue-700 text-xs">تعديل</button>
-                      <button onClick={() => deleteCategory(cat)}
+                      <button onClick={() => deleteCategory(cat.id, cat.name)}
                         className="text-red-500 hover:text-red-700 text-xs">حذف</button>
                     </>
                   )}
@@ -188,14 +195,14 @@ export default function AdminSummariesPage() {
           className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors"
           onClick={() => fileRef.current?.click()}
         >
-          <input ref={fileRef} type="file" accept="application/pdf" className="hidden"
+          <input ref={fileRef} type="file" accept=".pdf,.txt,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp" className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f && !form.title) setForm((prev) => ({ ...prev, title: f.name.replace(".pdf", "") }));
+              if (f && !form.title) setForm((prev) => ({ ...prev, title: f.name.replace(/\.[^.]+$/, "") }));
             }} />
-          <span className="text-4xl block mb-2">📄</span>
-          <p className="text-gray-500 text-sm">اضغط لاختيار ملف PDF</p>
-          <p className="text-gray-400 text-xs mt-1">الحد الأقصى 20 ميجابايت</p>
+          <span className="text-4xl block mb-2">📁</span>
+          <p className="text-gray-500 text-sm">اضغط لاختيار ملف</p>
+          <p className="text-gray-400 text-xs mt-1">PDF, Word, TXT, صور — الحد الأقصى 20 ميجابايت</p>
           {fileRef.current?.files?.[0] && (
             <p className="text-green-600 text-sm mt-2 font-medium">
               ✓ {fileRef.current.files[0].name}
@@ -215,7 +222,7 @@ export default function AdminSummariesPage() {
           <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
             className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
             <option value="">— بدون تصنيف —</option>
-            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
           </select>
           {categories.length === 0 && (
             <p className="text-xs text-gray-400 mt-1">أضف تصنيفاً من قسم "إدارة التصنيفات" أعلاه</p>
@@ -246,13 +253,27 @@ export default function AdminSummariesPage() {
       {/* Files list */}
       <h2 className="font-semibold text-gray-700 mb-3">الملفات المرفوعة ({summaries.length})</h2>
 
+      {/* Search */}
+      {summaries.length > 0 && (
+        <div className="relative max-w-md mb-4">
+          <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="ابحث في الملخصات..."
+            className="w-full border border-gray-200 rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white" />
+        </div>
+      )}
+
       {loading ? (
         <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}</div>
       ) : summaries.length === 0 ? (
         <p className="text-gray-400 text-center py-8">لا توجد ملفات بعد</p>
       ) : (
         <div className="space-y-2">
-          {summaries.map((s) => (
+          {summaries.filter((s) => !search.trim() || s.title.includes(search) || s.category?.includes(search) || s.file_name.includes(search)).map((s) => (
             <div key={s.id} className="bg-white rounded-xl shadow p-4 flex items-center gap-3">
               <span className="text-2xl shrink-0">📄</span>
               <div className="flex-1 min-w-0">

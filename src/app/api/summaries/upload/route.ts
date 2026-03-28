@@ -17,8 +17,19 @@ export async function POST(req: Request) {
     if (!file || !title) {
       return NextResponse.json({ error: "الملف والعنوان مطلوبان" }, { status: 400 });
     }
-    if (file.type !== "application/pdf") {
-      return NextResponse.json({ error: "يُسمح بملفات PDF فقط" }, { status: 400 });
+
+    const allowedTypes = [
+      "application/pdf",
+      "text/plain",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: "نوع الملف غير مدعوم. الأنواع المسموحة: PDF, TXT, DOC, DOCX, JPG, PNG, GIF, WEBP" }, { status: 400 });
     }
     if (file.size > 20 * 1024 * 1024) {
       return NextResponse.json({ error: "حجم الملف يتجاوز 20 ميجابايت" }, { status: 400 });
@@ -31,7 +42,7 @@ export async function POST(req: Request) {
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from("summaries")
-      .upload(fileName, bytes, { contentType: "application/pdf", upsert: false });
+      .upload(fileName, bytes, { contentType: file.type, upsert: false });
 
     if (uploadError) throw uploadError;
 

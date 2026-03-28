@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+interface Category {
+  id: string; name: string;
+}
 
 export default function NewArticlePage() {
   const router = useRouter();
   const [form, setForm] = useState({ title: "", excerpt: "", content: "", category: "", published: false });
+  const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/categories?type=article").then((r) => r.json()).then(setCategories);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,9 +46,14 @@ export default function NewArticlePage() {
         </Field>
 
         <Field label="التصنيف (اختياري)">
-          <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-            placeholder="مثال: فقه، عقيدة، تفسير..."
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500" />
+          <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+            <option value="">— بدون تصنيف —</option>
+            {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+          </select>
+          {categories.length === 0 && (
+            <p className="text-xs text-gray-400 mt-1">أضف تصنيفاً من صفحة المقالات &larr; إدارة التصنيفات</p>
+          )}
         </Field>
 
         <Field label="مقتطف (اختياري)">

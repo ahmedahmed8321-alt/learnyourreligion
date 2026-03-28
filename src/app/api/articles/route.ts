@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { title, content, excerpt, published = false } = body;
+  const { title, content, excerpt, category, published = false } = body;
   if (!title || !content) {
     return NextResponse.json({ error: "title and content are required" }, { status: 400 });
   }
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   const slug = `${slugify(title)}-${Date.now()}`;
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.from("articles").insert({
-    title, content, excerpt, slug, published,
+    title, content, excerpt, category: category || null, slug, published,
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
