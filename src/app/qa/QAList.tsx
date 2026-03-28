@@ -56,13 +56,23 @@ export default function QAList({ items }: { items: QA[] }) {
                 </svg>
               </button>
 
-              {openId === q.id && q.answer && (
+              {openId === q.id && (q.answer || q.audio_url) && (
                 <div className="px-5 pb-5 border-t border-gray-100">
                   <div className="pt-4">
-                    <p className="text-gray-700 text-base leading-loose whitespace-pre-line">
-                      <span className="font-semibold text-yellow-600 ml-1">الجواب:</span>
-                      {q.answer}
-                    </p>
+                    {q.answer && (
+                      <p className="text-gray-700 text-base leading-loose whitespace-pre-line">
+                        <span className="font-semibold text-yellow-600 ml-1">الجواب:</span>
+                        {q.answer}
+                      </p>
+                    )}
+                    {q.audio_url && (
+                      <div className="mt-3">
+                        {!q.answer && <span className="font-semibold text-yellow-600 text-sm block mb-2">الجواب (صوتي):</span>}
+                        <audio controls className="w-full max-w-md" preload="none">
+                          <source src={q.audio_url} />
+                        </audio>
+                      </div>
+                    )}
                     <div className="flex flex-wrap items-center gap-3 mt-4 text-xs text-gray-400">
                       <span>الشيخ محمود لاشين</span>
                       <span>•</span>

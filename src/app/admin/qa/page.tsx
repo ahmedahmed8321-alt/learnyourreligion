@@ -411,12 +411,22 @@ function QARow({ item, sections, editId, editAnswer, editSectionId, editPublishe
         </div>
       ) : (
         <div>
-          {item.answer ? (
+          {(item.answer || item.audio_url) ? (
             <div className="border-t border-gray-100 pt-3">
-              <p className="text-gray-600 text-sm leading-relaxed">
-                <span className="font-semibold text-yellow-600 ml-1">ج:</span>
-                {item.answer}
-              </p>
+              {item.answer && (
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  <span className="font-semibold text-yellow-600 ml-1">ج:</span>
+                  {item.answer}
+                </p>
+              )}
+              {item.audio_url && (
+                <div className="mt-2">
+                  {!item.answer && <span className="font-semibold text-yellow-600 text-xs">ج (صوتي):</span>}
+                  <audio controls className="w-full max-w-sm mt-1" preload="none">
+                    <source src={item.audio_url} />
+                  </audio>
+                </div>
+              )}
               <button onClick={onEdit} className="text-gray-400 hover:underline text-xs mt-2 block">تعديل الإجابة</button>
             </div>
           ) : (
