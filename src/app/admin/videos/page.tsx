@@ -6,17 +6,28 @@ import type { Video } from "@/lib/supabase";
 import SyncButton from "./SyncButton";
 import AdminVideoGrid from "./VideoGrid";
 
-export default async function AdminVideosPage() {
+const PAGE_SIZE = 48;
+
+interface Props { searchParams: { page?: string } }
+
+export default async function AdminVideosPage({ searchParams }: Props) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/admin/login");
 
+  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10));
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const supabase = getSupabaseAdmin();
-  const { data } = await supabase
+  const { data, count } = await supabase
     .from("videos")
-    .select("*")
-    .order("published_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("published_at", { ascending: false })
+    .range(from, to);
 
   const videos = (data ?? []) as Video[];
+  const total = count ?? 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div>
@@ -26,10 +37,10 @@ export default async function AdminVideosPage() {
       </div>
 
       <p className="text-gray-400 text-sm mb-4">
-        المقاطع تُجلب تلقائياً من القناة — {videos.length} مقطع حالياً
+        المقاطع تُجلب تلقائياً من القناة — {total} مقطع حالياً — صفحة {page} من {totalPages}
       </p>
 
-      <AdminVideoGrid videos={videos} />
+      <AdminVideoGrid videos={videos} currentPage={page} totalPages={totalPages} />
     </div>
   );
 }
