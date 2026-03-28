@@ -9,7 +9,7 @@ export async function setWebhook(webhookUrl: string, secret: string) {
     body: JSON.stringify({
       url: webhookUrl,
       secret_token: secret,
-      allowed_updates: ["message"],
+      allowed_updates: ["message", "channel_post"],
     }),
   });
   return res.json();
@@ -25,17 +25,20 @@ export async function sendMessage(chatId: number | string, text: string) {
   return res.json();
 }
 
-/** Parse an incoming Telegram update for a question */
+/** Parse an incoming Telegram update for a question (direct message or channel post) */
 export function parseQuestion(update: any): {
   messageId: number;
   chatId: number;
   text: string;
+  isChannelPost: boolean;
 } | null {
-  const message = update?.message;
+  // Handle both direct messages and channel posts
+  const message = update?.message ?? update?.channel_post;
   if (!message?.text) return null;
   return {
     messageId: message.message_id,
     chatId: message.chat.id,
     text: message.text,
+    isChannelPost: !!update?.channel_post,
   };
 }

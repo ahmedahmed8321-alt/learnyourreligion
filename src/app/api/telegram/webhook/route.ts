@@ -17,6 +17,7 @@ export async function GET(req: Request) {
       body: JSON.stringify({
         url: webhookUrl,
         secret_token: secret,
+        allowed_updates: ["message", "channel_post"],
       }),
     }
   );
