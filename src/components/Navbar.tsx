@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import type { User } from "@supabase/supabase-js";
@@ -19,6 +19,8 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -30,10 +32,29 @@ export default function Navbar() {
 
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll);
-    return () => { subscription.unsubscribe(); window.removeEventListener("scroll", onScroll); };
+
+    const onClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("mousedown", onClickOutside);
+    };
   }, []);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => { setOpen(false); setShowMenu(false); }, [pathname]);
+
+  async function handleSignOut() {
+    const supabase = createSupabaseBrowser();
+    await supabase.auth.signOut();
+    setUser(null);
+    setShowMenu(false);
+  }
 
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -83,11 +104,32 @@ export default function Navbar() {
             </a>
 
             {user ? (
-              <Link href="/profile"
-                className="bg-yellow-500 hover:bg-yellow-400 text-green-900 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors shadow"
-                title={user.user_metadata?.name ?? "حسابي"}>
-                {(user.user_metadata?.name ?? "م")[0]}
-              </Link>
+              <div className="relative" ref={menuRef}>
+                <button onClick={() => setShowMenu(!showMenu)}
+                  className="bg-yellow-500 hover:bg-yellow-400 text-green-900 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors shadow"
+                  title={user.user_metadata?.name ?? "حسابي"}>
+                  {(user.user_metadata?.name ?? "م")[0]}
+                </button>
+                {showMenu && (
+                  <div className="absolute left-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-2 min-w-[160px] z-50">
+                    <Link href="/profile"
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      حسابي
+                    </Link>
+                    <div className="border-t border-gray-100 my-1" />
+                    <button onClick={handleSignOut}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-right">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      تسجيل الخروج
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <Link href="/login"
                 className="text-green-200 hover:text-white border border-green-600 hover:border-green-400 px-3 py-1.5 rounded-full text-xs transition-colors">
@@ -130,7 +172,12 @@ export default function Navbar() {
               className="flex items-center gap-2 bg-green-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex-1 justify-center">
               <WhatsAppIcon /> انضم للقناة
             </a>
-            {!user && (
+            {user ? (
+              <button onClick={handleSignOut}
+                className="flex items-center justify-center border border-red-600 text-red-400 px-4 py-2.5 rounded-xl text-sm flex-1">
+                تسجيل الخروج
+              </button>
+            ) : (
               <Link href="/login"
                 className="flex items-center justify-center border border-green-600 text-green-200 px-4 py-2.5 rounded-xl text-sm flex-1">
                 تسجيل الدخول

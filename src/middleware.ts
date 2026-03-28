@@ -1,18 +1,17 @@
-import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export default withAuth(
-  function middleware(req) {
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
+export async function middleware(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  if (!token) {
+    return NextResponse.redirect(new URL("/admin/login", req.url));
   }
-);
 
-// Protect all /admin/* routes except the login page
+  return NextResponse.next();
+}
+
 export const config = {
   matcher: ["/admin/((?!login).*)"],
 };
