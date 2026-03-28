@@ -49,14 +49,14 @@ export default function AdminQAPage() {
     (q) => !search.trim() || q.question.includes(search) || q.answer?.includes(search)
   );
 
-  async function saveQA(id: string) {
+  async function saveQA(id: string, publish?: boolean) {
     await fetch(`/api/qa/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         answer: editAnswer || null,
         section_id: editSectionId || null,
-        published: editPublished,
+        published: publish ?? editPublished,
       }),
     });
     setEditId(null);
@@ -260,10 +260,11 @@ export default function AdminQAPage() {
               {filtered.map((q) => (
                 <QARow key={q.id} item={q} sections={sections}
                   editId={editId} editAnswer={editAnswer} editSectionId={editSectionId} editPublished={editPublished}
-                  onEdit={() => { setEditId(q.id); setEditAnswer(q.answer ?? ""); setEditSectionId(q.section_id ?? ""); setEditPublished(q.published || !q.answer); }}
+                  onEdit={() => { setEditId(q.id); setEditAnswer(q.answer ?? ""); setEditSectionId(q.section_id ?? ""); setEditPublished(q.published); }}
                   onCancelEdit={() => setEditId(null)}
                   onChangeAnswer={setEditAnswer} onChangeSectionId={setEditSectionId} onChangePublished={setEditPublished}
                   onSave={() => saveQA(q.id)}
+                  onSaveAndPublish={() => saveQA(q.id, true)}
                   onTogglePublish={() => togglePublish(q.id, q.published)}
                   onDelete={() => deleteQA(q.id)}
                 />
@@ -332,12 +333,12 @@ function SectionRow({ section, onDelete, onUpdate }: {
 /* ── Q&A Row ────────────────────────────────────────────────────────────────── */
 function QARow({ item, sections, editId, editAnswer, editSectionId, editPublished,
   onEdit, onCancelEdit, onChangeAnswer, onChangeSectionId, onChangePublished,
-  onSave, onTogglePublish, onDelete }: {
+  onSave, onSaveAndPublish, onTogglePublish, onDelete }: {
   item: QA; sections: QASection[];
   editId: string | null; editAnswer: string; editSectionId: string; editPublished: boolean;
   onEdit: () => void; onCancelEdit: () => void;
   onChangeAnswer: (v: string) => void; onChangeSectionId: (v: string) => void; onChangePublished: (v: boolean) => void;
-  onSave: () => void; onTogglePublish: () => void; onDelete: () => void;
+  onSave: () => void; onSaveAndPublish: () => void; onTogglePublish: () => void; onDelete: () => void;
 }) {
   const isEditing = editId === item.id;
   const sectionName = sections.find((s) => s.id === item.section_id)?.title;
@@ -396,10 +397,14 @@ function QARow({ item, sections, editId, editAnswer, editSectionId, editPublishe
               نشر للزوار
             </label>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button onClick={onSave}
+              className="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg text-sm hover:bg-gray-300 font-medium">
+              حفظ كمسودة
+            </button>
+            <button onClick={onSaveAndPublish}
               className="bg-green-700 text-white px-5 py-2 rounded-lg text-sm hover:bg-green-600 font-medium">
-              حفظ
+              إرسال الإجابة
             </button>
             <button onClick={onCancelEdit} className="text-gray-400 text-sm hover:underline px-3">إلغاء</button>
           </div>
