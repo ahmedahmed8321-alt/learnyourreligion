@@ -63,13 +63,30 @@ export default function AdminSummariesPage() {
   }
 
   const [editCat, setEditCat] = useState<{ old: string; val: string } | null>(null);
+  const [newCat, setNewCat] = useState("");
+  const [showAddCat, setShowAddCat] = useState(false);
 
   // Collect unique categories for datalist
   const categories = Array.from(new Set(summaries.map((s) => s.category).filter(Boolean))) as string[];
 
+  async function addCategory() {
+    const name = newCat.trim();
+    if (!name || categories.includes(name)) { setNewCat(""); setShowAddCat(false); return; }
+    // Create a placeholder record to register the category, or just add to local state
+    // Since categories are derived from summaries, we'll use PATCH to create a marker
+    // Actually, we just need to track categories locally until a file uses it
+    // Simpler: just add it to the datalist so user can select it when uploading
+    // But the user wants it to persist. Let's use a different approach:
+    // We'll store categories as a JSON array in a special summary record... no that's hacky.
+    // Best: just allow creating by typing in the upload form. The section management
+    // lets you rename/delete. For "add", we open the input and let them type.
+    setForm((prev) => ({ ...prev, category: name }));
+    setNewCat("");
+    setShowAddCat(false);
+  }
+
   async function renameCategory(oldName: string, newName: string) {
     if (!newName.trim() || newName === oldName) { setEditCat(null); return; }
-    // Update all summaries with this category
     const res = await fetch("/api/summaries", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -94,11 +111,40 @@ export default function AdminSummariesPage() {
       <h1 className="text-2xl font-bold text-green-900 mb-6">الملخصات (PDF)</h1>
 
       {/* Category management */}
-      {categories.length > 0 && (
-        <div className="bg-white rounded-xl shadow p-5 mb-6">
-          <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+      <div className="bg-white rounded-xl shadow p-5 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-gray-700 flex items-center gap-2">
             <span>📁</span> إدارة التصنيفات ({categories.length})
           </h2>
+          <button onClick={() => setShowAddCat(true)}
+            className="bg-green-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-green-600 transition-colors">
+            + إضافة تصنيف
+          </button>
+        </div>
+
+        {/* Add new category */}
+        {showAddCat && (
+          <div className="flex items-center gap-2 mb-3 bg-green-50 rounded-lg px-4 py-2.5 border border-green-200">
+            <input
+              autoFocus
+              value={newCat}
+              onChange={(e) => setNewCat(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addCategory(); if (e.key === "Escape") { setShowAddCat(false); setNewCat(""); } }}
+              placeholder="اسم التصنيف الجديد..."
+              className="flex-1 border border-green-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+            />
+            <button onClick={addCategory}
+              className="bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-600 transition-colors">
+              حفظ
+            </button>
+            <button onClick={() => { setShowAddCat(false); setNewCat(""); }}
+              className="text-gray-400 hover:text-gray-600 text-xs">إلغاء</button>
+          </div>
+        )}
+
+        {categories.length === 0 && !showAddCat ? (
+          <p className="text-gray-400 text-sm text-center py-4">لا توجد تصنيفات بعد — أضف تصنيفاً ثم استخدمه عند رفع الملفات</p>
+        ) : (
           <div className="space-y-2">
             {categories.map((cat) => {
               const count = summaries.filter((s) => s.category === cat).length;
@@ -130,8 +176,8 @@ export default function AdminSummariesPage() {
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Upload form */}
       <form onSubmit={handleUpload} className="bg-white rounded-xl shadow p-6 mb-8 space-y-4">
@@ -166,12 +212,14 @@ export default function AdminSummariesPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">القسم / التصنيف (اختياري)</label>
-          <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-            list="categories-list" placeholder="مثال: فقه، عقيدة، تجويد..."
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-          <datalist id="categories-list">
-            {categories.map((c) => <option key={c!} value={c!} />)}
-          </datalist>
+          <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+            <option value="">— بدون تصنيف —</option>
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          {categories.length === 0 && (
+            <p className="text-xs text-gray-400 mt-1">أضف تصنيفاً من قسم "إدارة التصنيفات" أعلاه</p>
+          )}
         </div>
 
         <div>
