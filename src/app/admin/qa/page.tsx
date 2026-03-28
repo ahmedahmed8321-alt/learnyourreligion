@@ -260,7 +260,7 @@ export default function AdminQAPage() {
               {filtered.map((q) => (
                 <QARow key={q.id} item={q} sections={sections}
                   editId={editId} editAnswer={editAnswer} editSectionId={editSectionId} editPublished={editPublished}
-                  onEdit={() => { setEditId(q.id); setEditAnswer(q.answer ?? ""); setEditSectionId(q.section_id ?? ""); setEditPublished(q.published); }}
+                  onEdit={() => { setEditId(q.id); setEditAnswer(q.answer ?? ""); setEditSectionId(q.section_id ?? ""); setEditPublished(q.published || !q.answer); }}
                   onCancelEdit={() => setEditId(null)}
                   onChangeAnswer={setEditAnswer} onChangeSectionId={setEditSectionId} onChangePublished={setEditPublished}
                   onSave={() => saveQA(q.id)}
