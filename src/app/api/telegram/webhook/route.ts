@@ -41,10 +41,16 @@ export async function POST(req: Request) {
 
     const supabase = getSupabaseAdmin();
 
-    // Save question — admin will answer it from the panel
+    // Parse Q&A from message text
+    // Lines starting with س = question, lines starting with ج = answer
+    const { question, answer } = splitQA(parsed.text);
+
+    // Ignore if no question found
+    if (!question) return NextResponse.json({ ok: true });
+
     const { error } = await supabase.from("qa").insert({
-      question: parsed.text,
-      answer: null,
+      question,
+      answer: answer || null,
       source: "telegram",
       telegram_message_id: parsed.messageId,
       published: false, // Admin reviews before publishing
@@ -59,4 +65,45 @@ export async function POST(req: Request) {
     console.error("Telegram webhook error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
+}
+
+/**
+ * Split a Telegram message into question and answer.
+ * Question starts with س (or س: / س/ etc.)
+ * Answer starts with ج (or ج: / ج/ etc.)
+ * If no markers found, the whole text is treated as a question.
+ */
+function splitQA(text: string): { question: string; answer: string | null } {
+  // Match lines/sections starting with س or ج (with optional : or - after)
+  const qMatch = text.match(/^س[\s:\/\-]*(.+)/m);
+  const aMatch = text.match(/^ج[\s:\/\-]*([\s\S]+)/m);
+
+  if (qMatch && aMatch) {
+    // Both Q and A found — extract each part
+    const qIndex = text.indexOf(qMatch[0]);
+    const aIndex = text.indexOf(aMatch[0]);
+
+    let question: string;
+    let answer: string;
+
+    if (qIndex < aIndex) {
+      // Q comes first, A comes after
+      question = text.substring(qIndex, aIndex).replace(/^س[\s:\/\-]*/, "").trim();
+      answer = text.substring(aIndex).replace(/^ج[\s:\/\-]*/, "").trim();
+    } else {
+      // A comes first (unusual but handle it)
+      answer = text.substring(aIndex, qIndex).replace(/^ج[\s:\/\-]*/, "").trim();
+      question = text.substring(qIndex).replace(/^س[\s:\/\-]*/, "").trim();
+    }
+
+    return { question, answer: answer || null };
+  }
+
+  if (qMatch) {
+    // Only Q marker, no A
+    return { question: qMatch[1].trim(), answer: null };
+  }
+
+  // No markers — treat the whole message as a question
+  return { question: text.trim(), answer: null };
 }
