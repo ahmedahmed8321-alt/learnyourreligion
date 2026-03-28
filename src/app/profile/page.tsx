@@ -92,6 +92,23 @@ function ProfileContent() {
         </button>
       </div>
 
+      {/* Learning progress link */}
+      <Link href="/profile/notes"
+        className="block bg-gradient-to-l from-green-50 to-blue-50 border border-green-200 rounded-2xl p-5 mb-6 hover:shadow-md transition-shadow group">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📝</span>
+            <div>
+              <h3 className="font-bold text-green-800">ملاحظاتي ومتابعة التعلم</h3>
+              <p className="text-sm text-gray-500 mt-0.5">سجّل ملاحظاتك وتابع تقدمك في الدروس</p>
+            </div>
+          </div>
+          <svg className="w-5 h-5 text-green-600 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
+          </svg>
+        </div>
+      </Link>
+
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         {[

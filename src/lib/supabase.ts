@@ -72,3 +72,24 @@ export interface QA {
   published: boolean;
   created_at: string;
 }
+
+export interface UserNote {
+  id: string;
+  user_id: string;
+  content: string;
+  video_youtube_id: string | null;
+  video_title: string | null;
+  created_at: string;
+  updated_at: string;
+  attachments?: UserAttachment[];
+}
+
+export interface UserAttachment {
+  id: string;
+  user_id: string;
+  note_id: string;
+  file_url: string;
+  file_name: string;
+  file_size: number | null;
+  created_at: string;
+}
