@@ -31,6 +31,7 @@ export function parseQuestion(update: any): {
   chatId: number;
   text: string;
   isChannelPost: boolean;
+  replyToMessageId: number | null;
 } | null {
   // Handle both direct messages and channel posts
   const message = update?.message ?? update?.channel_post;
@@ -40,5 +41,6 @@ export function parseQuestion(update: any): {
     chatId: message.chat.id,
     text: message.text,
     isChannelPost: !!update?.channel_post,
+    replyToMessageId: message.reply_to_message?.message_id ?? null,
   };
 }

@@ -41,6 +41,29 @@ export async function POST(req: Request) {
 
     const supabase = getSupabaseAdmin();
 
+    // If this is a reply to an existing message, append to its answer
+    if (parsed.replyToMessageId) {
+      const { data: existing } = await supabase
+        .from("qa")
+        .select("id, answer")
+        .eq("telegram_message_id", parsed.replyToMessageId)
+        .single();
+
+      if (existing) {
+        const newText = parsed.text.replace(/^ج[\s:\/\-]*/, "").trim();
+        const updatedAnswer = existing.answer
+          ? `${existing.answer}\n${newText}`
+          : newText;
+
+        await supabase
+          .from("qa")
+          .update({ answer: updatedAnswer })
+          .eq("id", existing.id);
+
+        return NextResponse.json({ ok: true });
+      }
+    }
+
     // Parse Q&A from message text
     // Lines starting with س = question, lines starting with ج = answer
     const { question, answer } = splitQA(parsed.text);
