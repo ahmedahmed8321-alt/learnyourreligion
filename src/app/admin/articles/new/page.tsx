@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function NewArticlePage() {
   const router = useRouter();
-  const [form, setForm] = useState({ title: "", excerpt: "", content: "", published: false });
+  const [form, setForm] = useState({ title: "", excerpt: "", content: "", category: "", published: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,6 +33,12 @@ export default function NewArticlePage() {
         <Field label="عنوان المقال *">
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
             required placeholder="اكتب عنوان المقال هنا..."
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500" />
+        </Field>
+
+        <Field label="التصنيف (اختياري)">
+          <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+            placeholder="مثال: فقه، عقيدة، تفسير..."
             className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500" />
         </Field>
 

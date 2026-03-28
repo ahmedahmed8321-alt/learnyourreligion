@@ -52,6 +52,7 @@ export default function AdminArticlesPage() {
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
               <tr>
                 <th className="text-right px-5 py-3">العنوان</th>
+                <th className="text-right px-5 py-3">التصنيف</th>
                 <th className="text-right px-5 py-3">الحالة</th>
                 <th className="text-right px-5 py-3">التاريخ</th>
                 <th className="px-5 py-3" />
@@ -61,6 +62,7 @@ export default function AdminArticlesPage() {
               {articles.map((a) => (
                 <tr key={a.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3 font-medium text-gray-800">{a.title}</td>
+                  <td className="px-5 py-3 text-gray-400 text-xs">{a.category ?? "—"}</td>
                   <td className="px-5 py-3">
                     <button
                       onClick={() => togglePublish(a.id, a.published)}

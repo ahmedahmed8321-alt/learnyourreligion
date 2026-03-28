@@ -54,22 +54,6 @@ export default async function QAPage() {
         {/* Ask a question */}
         <AskForm />
 
-        {/* Sections navigation */}
-        {sections.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <a href="#all"
-              className="bg-green-700 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-green-600 transition-colors shadow-sm">
-              الكل
-            </a>
-            {sections.map((s) => (
-              <a key={s.id} href={`#section-${s.id}`}
-                className="bg-white border border-green-200 text-green-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-green-50 hover:border-green-400 transition-colors shadow-sm">
-                {s.title}
-              </a>
-            ))}
-          </div>
-        )}
-
         <QASearch sections={sections} bySectionId={bySectionId} unsectioned={unsectioned} />
       </div>
     </div>

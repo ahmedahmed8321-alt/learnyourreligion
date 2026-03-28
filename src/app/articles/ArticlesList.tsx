@@ -7,18 +7,61 @@ import type { Article } from "@/lib/supabase";
 
 export default function ArticlesList({ articles }: { articles: Article[] }) {
   const [search, setSearch] = useState("");
+  const [activeCat, setActiveCat] = useState<string | null>(null);
 
-  const filtered = search.trim()
-    ? articles.filter((a) =>
-        a.title.includes(search) || a.excerpt?.includes(search)
-      )
-    : articles;
+  // All categories for filter pills
+  const allCategories = Array.from(new Set(articles.map((a) => a.category).filter(Boolean))) as string[];
+  const hasUncategorized = articles.some((a) => !a.category);
+
+  // Filter by category + search
+  let filtered = articles;
+  if (activeCat === "__none") {
+    filtered = filtered.filter((a) => !a.category);
+  } else if (activeCat) {
+    filtered = filtered.filter((a) => a.category === activeCat);
+  }
+  if (search.trim()) {
+    filtered = filtered.filter((a) =>
+      a.title.includes(search) || a.excerpt?.includes(search)
+    );
+  }
 
   return (
     <>
       {articles.length > 0 && (
-        <div className="mb-6">
+        <div className="space-y-4 mb-6">
           <SearchInput value={search} onChange={setSearch} placeholder="ابحث في المقالات..." />
+
+          {allCategories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setActiveCat(null)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm ${
+                  !activeCat ? "bg-green-700 text-white" : "bg-white border border-green-200 text-green-700 hover:bg-green-50"
+                }`}>
+                الكل
+              </button>
+              {allCategories.map((cat) => {
+                const count = articles.filter((a) => a.category === cat).length;
+                return (
+                  <button key={cat} onClick={() => setActiveCat(activeCat === cat ? null : cat)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm ${
+                      activeCat === cat ? "bg-green-700 text-white" : "bg-white border border-green-200 text-green-700 hover:bg-green-50"
+                    }`}>
+                    {cat}
+                    <span className="mr-1 text-xs opacity-70">({count})</span>
+                  </button>
+                );
+              })}
+              {hasUncategorized && allCategories.length > 0 && (
+                <button onClick={() => setActiveCat(activeCat === "__none" ? null : "__none")}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm ${
+                    activeCat === "__none" ? "bg-green-700 text-white" : "bg-white border border-green-200 text-green-700 hover:bg-green-50"
+                  }`}>
+                  متنوعة
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -31,9 +74,9 @@ export default function ArticlesList({ articles }: { articles: Article[] }) {
             </svg>
           </div>
           <p className="text-lg font-semibold text-gray-500">
-            {search ? `لا توجد نتائج لـ "${search}"` : "لا توجد مقالات بعد"}
+            {search || activeCat ? "لا توجد نتائج" : "لا توجد مقالات بعد"}
           </p>
-          {!search && <p className="text-sm text-gray-400">سيضيف الشيخ المقالات قريباً</p>}
+          {!search && !activeCat && <p className="text-sm text-gray-400">سيضيف الشيخ المقالات قريباً</p>}
         </div>
       ) : (
         <div className="space-y-4">
@@ -53,9 +96,14 @@ function ArticleRow({ article }: { article: Article }) {
       <div className="flex items-start gap-4">
         <div className="shrink-0 mt-1.5 w-3 h-3 rounded-full bg-yellow-400 group-hover:bg-green-500 transition-colors" />
         <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-bold text-green-900 group-hover:text-green-700 transition-colors mb-1.5 leading-relaxed">
-            {article.title}
-          </h2>
+          <div className="flex items-center gap-2 mb-1.5">
+            <h2 className="text-lg font-bold text-green-900 group-hover:text-green-700 transition-colors leading-relaxed">
+              {article.title}
+            </h2>
+            {article.category && (
+              <span className="shrink-0 bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full">{article.category}</span>
+            )}
+          </div>
           {article.excerpt && (
             <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed">{article.excerpt}</p>
           )}

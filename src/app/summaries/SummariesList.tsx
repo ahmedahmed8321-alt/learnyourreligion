@@ -16,12 +16,24 @@ interface Summary {
 
 export default function SummariesList({ summaries }: { summaries: Summary[] }) {
   const [search, setSearch] = useState("");
+  const [activeCat, setActiveCat] = useState<string | null>(null);
 
-  const filtered = search.trim()
-    ? summaries.filter((s) =>
-        s.title.includes(search) || s.description?.includes(search) || s.category?.includes(search)
-      )
-    : summaries;
+  // All categories for filter pills
+  const allCategories = Array.from(new Set(summaries.map((s) => s.category).filter(Boolean))) as string[];
+  const hasUncategorized = summaries.some((s) => !s.category);
+
+  // Filter by search + category
+  let filtered = summaries;
+  if (activeCat === "__none") {
+    filtered = filtered.filter((s) => !s.category);
+  } else if (activeCat) {
+    filtered = filtered.filter((s) => s.category === activeCat);
+  }
+  if (search.trim()) {
+    filtered = filtered.filter((s) =>
+      s.title.includes(search) || s.description?.includes(search) || s.category?.includes(search)
+    );
+  }
 
   // Group filtered results
   const grouped: Record<string, Summary[]> = {};
@@ -39,8 +51,39 @@ export default function SummariesList({ summaries }: { summaries: Summary[] }) {
   return (
     <>
       {summaries.length > 0 && (
-        <div className="mb-8">
+        <div className="space-y-4 mb-8">
           <SearchInput value={search} onChange={setSearch} placeholder="ابحث في الملخصات..." />
+
+          {allCategories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setActiveCat(null)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm ${
+                  !activeCat ? "bg-green-700 text-white" : "bg-white border border-green-200 text-green-700 hover:bg-green-50"
+                }`}>
+                الكل
+              </button>
+              {allCategories.map((cat) => {
+                const count = summaries.filter((s) => s.category === cat).length;
+                return (
+                  <button key={cat} onClick={() => setActiveCat(activeCat === cat ? null : cat)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm ${
+                      activeCat === cat ? "bg-green-700 text-white" : "bg-white border border-green-200 text-green-700 hover:bg-green-50"
+                    }`}>
+                    {cat}
+                    <span className="mr-1 text-xs opacity-70">({count})</span>
+                  </button>
+                );
+              })}
+              {hasUncategorized && (
+                <button onClick={() => setActiveCat(activeCat === "__none" ? null : "__none")}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm ${
+                    activeCat === "__none" ? "bg-green-700 text-white" : "bg-white border border-green-200 text-green-700 hover:bg-green-50"
+                  }`}>
+                  متنوعة
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

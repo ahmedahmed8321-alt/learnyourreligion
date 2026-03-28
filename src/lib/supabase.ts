@@ -32,6 +32,7 @@ export interface Article {
   content: string;
   excerpt: string | null;
   slug: string;
+  category: string | null;
   published: boolean;
   created_at: string;
   updated_at: string;
