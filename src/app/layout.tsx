@@ -13,10 +13,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // Allow users to pinch-zoom (accessibility) and avoid iOS Safari getting
-  // "stuck" zoomed-in after focusing a small input field.
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

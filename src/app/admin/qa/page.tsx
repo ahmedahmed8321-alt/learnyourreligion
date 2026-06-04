@@ -229,8 +229,8 @@ export default function AdminQAPage() {
           {sections.length === 0 ? (
             <p className="text-gray-400 text-center py-8">لا توجد أقسام بعد</p>
           ) : (
-            <div className="bg-white rounded-xl shadow overflow-x-auto">
-              <table className="w-full text-sm min-w-[560px]">
+            <div className="bg-white rounded-xl shadow overflow-hidden">
+              <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-500 text-xs">
                   <tr>
                     <th className="text-right px-5 py-3">القسم</th>

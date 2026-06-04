@@ -203,8 +203,8 @@ export default function AdminArticlesPage() {
           ) : articles.length === 0 ? (
             <p className="text-gray-400 text-center py-12">لا توجد مقالات بعد</p>
           ) : (
-            <div className="bg-white rounded-xl shadow overflow-x-auto">
-              <table className="w-full text-sm min-w-[640px]">
+            <div className="bg-white rounded-xl shadow overflow-hidden">
+              <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
                   <tr>
                     <th className="text-right px-5 py-3">العنوان</th>
