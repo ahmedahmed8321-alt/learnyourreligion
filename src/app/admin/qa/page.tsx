@@ -20,6 +20,8 @@ export default function AdminQAPage() {
   // New manual Q&A
   const [showNew, setShowNew] = useState(false);
   const [newQ, setNewQ] = useState({ question: "", answer: "", section_id: "", published: true });
+  const [newImage, setNewImage] = useState<File | null>(null);
+  const [newAnswerImage, setNewAnswerImage] = useState<File | null>(null);
 
   // New section
   const [showNewSection, setShowNewSection] = useState(false);
@@ -80,12 +82,23 @@ export default function AdminQAPage() {
 
   async function addManual(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/qa", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...newQ, section_id: newQ.section_id || null }),
-    });
+    if (!newQ.question.trim() && !newImage) {
+      alert("اكتب السؤال أو أرفق صورة");
+      return;
+    }
+    const fd = new FormData();
+    fd.append("question", newQ.question);
+    fd.append("answer", newQ.answer);
+    fd.append("section_id", newQ.section_id);
+    fd.append("published", String(newQ.published));
+    if (newImage) fd.append("image", newImage);
+    if (newAnswerImage) fd.append("answer_image", newAnswerImage);
+
+    await fetch("/api/qa", { method: "POST", body: fd });
+
     setNewQ({ question: "", answer: "", section_id: "", published: true });
+    setNewImage(null);
+    setNewAnswerImage(null);
     setShowNew(false);
     load();
   }
@@ -134,11 +147,18 @@ export default function AdminQAPage() {
         <form onSubmit={addManual} className="bg-white rounded-xl shadow p-5 mb-6 space-y-3 border border-green-100">
           <h2 className="font-semibold text-gray-700">إضافة سؤال يدوي</h2>
           <textarea value={newQ.question} onChange={(e) => setNewQ({ ...newQ, question: e.target.value })}
-            required rows={2} placeholder="نص السؤال *"
+            rows={2} placeholder="نص السؤال (أو أرفق صورة بالأسفل)"
             className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:outline-none text-sm" />
+
+          {/* Question image */}
+          <ImagePicker label="صورة السؤال (اختياري)" file={newImage} onChange={setNewImage} />
+
           <textarea value={newQ.answer} onChange={(e) => setNewQ({ ...newQ, answer: e.target.value })}
             rows={3} placeholder="نص الجواب (اختياري)"
             className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:outline-none text-sm" />
+
+          {/* Answer image */}
+          <ImagePicker label="صورة الجواب (اختياري)" file={newAnswerImage} onChange={setNewAnswerImage} />
           <div className="flex flex-wrap gap-4 items-center">
             <select value={newQ.section_id} onChange={(e) => setNewQ({ ...newQ, section_id: e.target.value })}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
@@ -332,6 +352,46 @@ function SectionRow({ section, onDelete, onUpdate }: {
 }
 
 /* ── Q&A Row ────────────────────────────────────────────────────────────────── */
+/* ── Reusable image picker (with preview) ──────────────────────────────────── */
+function ImagePicker({ label, file, onChange }: {
+  label: string; file: File | null; onChange: (f: File | null) => void;
+}) {
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) { setPreview(null); return; }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  function handle(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    if (f && f.size > 10 * 1024 * 1024) { alert("حجم الصورة يتجاوز 10 ميجابايت"); return; }
+    onChange(f);
+  }
+
+  return (
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+      {preview ? (
+        <div className="relative inline-block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt="معاينة" className="max-h-40 rounded-lg border border-gray-200" />
+          <button type="button" onClick={() => onChange(null)}
+            className="absolute -top-2 -left-2 bg-red-500 text-white w-6 h-6 rounded-full text-sm leading-none hover:bg-red-600 shadow">×</button>
+        </div>
+      ) : (
+        <label className="inline-flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-4 py-2 cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors text-gray-500 text-xs">
+          <span>📷</span>
+          <span>إرفاق صورة</span>
+          <input type="file" accept="image/*" onChange={handle} className="hidden" />
+        </label>
+      )}
+    </div>
+  );
+}
+
 function QARow({ item, sections, editId, editAnswer, editSectionId, editPublished,
   onEdit, onCancelEdit, onChangeAnswer, onChangeSectionId, onChangePublished,
   onSave, onSaveAndPublish, onTogglePublish, onDelete, onRefresh }: {
