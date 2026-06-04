@@ -45,7 +45,8 @@ export default function QAList({ items }: { items: QA[] }) {
                 onClick={() => setOpenId(openId === q.id ? null : q.id)}
                 className="w-full text-right px-5 py-4 flex items-start justify-between gap-3 hover:bg-gray-50 rounded-xl transition-colors"
               >
-                <span className="font-semibold text-green-900 text-base leading-relaxed">
+                <span className="font-semibold text-green-900 text-base leading-relaxed flex items-center gap-1.5">
+                  {q.image_url && <span title="يحتوي على صورة">📷</span>}
                   {q.question}
                 </span>
                 <svg
@@ -56,9 +57,17 @@ export default function QAList({ items }: { items: QA[] }) {
                 </svg>
               </button>
 
-              {openId === q.id && (q.answer || q.audio_url) && (
+              {openId === q.id && (q.answer || q.audio_url || q.image_url || q.answer_image_url) && (
                 <div className="px-5 pb-5 border-t border-gray-100">
                   <div className="pt-4">
+                    {q.image_url && (
+                      <a href={q.image_url} target="_blank" rel="noopener noreferrer" className="inline-block mb-4">
+                        <span className="font-semibold text-green-700 text-sm block mb-2">صورة السؤال:</span>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={q.image_url} alt="صورة السؤال"
+                          className="max-h-72 rounded-xl border border-gray-200 hover:opacity-90 transition-opacity" />
+                      </a>
+                    )}
                     {q.answer && (
                       <p className="text-gray-700 text-base leading-loose whitespace-pre-line">
                         <span className="font-semibold text-yellow-600 ml-1">الجواب:</span>
@@ -72,6 +81,14 @@ export default function QAList({ items }: { items: QA[] }) {
                           <source src={q.audio_url} />
                         </audio>
                       </div>
+                    )}
+                    {q.answer_image_url && (
+                      <a href={q.answer_image_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-3">
+                        {!q.answer && !q.audio_url && <span className="font-semibold text-yellow-600 text-sm block mb-2">الجواب (صورة):</span>}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={q.answer_image_url} alt="صورة الإجابة"
+                          className="max-h-72 rounded-xl border border-gray-200 hover:opacity-90 transition-opacity" />
+                      </a>
                     )}
                     <div className="flex flex-wrap items-center gap-3 mt-4 text-xs text-gray-400">
                       <span>الشيخ محمود لاشين</span>

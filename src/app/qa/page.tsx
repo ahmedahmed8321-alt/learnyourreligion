@@ -15,12 +15,12 @@ export default async function QAPage() {
 
   const sections = (sectionsData ?? []) as QASection[];
 
-  // Fetch all published Q&A with answers
+  // Fetch all published Q&A that have an answer in any form (text, audio, or image)
   const { data: qaData } = await supabase
     .from("qa")
     .select("*")
     .eq("published", true)
-    .not("answer", "is", null)
+    .or("answer.not.is.null,audio_url.not.is.null,answer_image_url.not.is.null")
     .order("created_at", { ascending: false });
 
   const allQA = (qaData ?? []) as QA[];

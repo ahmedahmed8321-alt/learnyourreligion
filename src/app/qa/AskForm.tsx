@@ -11,8 +11,30 @@ export default function AskForm() {
   const [form, setForm] = useState({
     question: "", submitter_name: "", submitter_email: "", is_private: false,
   });
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setStatus("error");
+      setErrorMsg("حجم الصورة يتجاوز 10 ميجابايت");
+      return;
+    }
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+    setStatus("idle");
+    setErrorMsg("");
+  }
+
+  function clearImage() {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImage(null);
+    setImagePreview(null);
+  }
 
   useEffect(() => {
     const supabase = createSupabaseBrowser();
@@ -21,34 +43,38 @@ export default function AskForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!form.question.trim() && !image) {
+      setStatus("error");
+      setErrorMsg("اكتب سؤالك أو أرفق صورة");
+      return;
+    }
+
     setStatus("loading");
     setErrorMsg("");
 
-    const payload: any = {
-      question: form.question,
-      is_private: form.is_private,
-    };
+    const payload = new FormData();
+    payload.append("question", form.question);
+    payload.append("is_private", String(form.is_private));
+    if (image) payload.append("image", image);
 
     // If logged in, attach user info
     if (user) {
-      payload.user_id = user.id;
-      payload.submitter_name = user.user_metadata?.name ?? null;
-      payload.submitter_email = user.email ?? null;
+      payload.append("user_id", user.id);
+      if (user.user_metadata?.name) payload.append("submitter_name", user.user_metadata.name);
+      if (user.email) payload.append("submitter_email", user.email);
     } else {
-      payload.submitter_name = form.submitter_name || null;
-      payload.submitter_email = form.submitter_email || null;
+      if (form.submitter_name) payload.append("submitter_name", form.submitter_name);
+      if (form.submitter_email) payload.append("submitter_email", form.submitter_email);
     }
 
-    const res = await fetch("/api/qa/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = await fetch("/api/qa/submit", { method: "POST", body: payload });
     const data = await res.json();
 
     if (res.ok) {
       setStatus("success");
       setForm({ question: "", submitter_name: "", submitter_email: "", is_private: false });
+      clearImage();
     } else {
       setStatus("error");
       setErrorMsg(data.error ?? "حدث خطأ");
@@ -113,14 +139,34 @@ export default function AskForm() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">سؤالك *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">سؤالك</label>
               <textarea
                 value={form.question}
                 onChange={(e) => setForm({ ...form, question: e.target.value })}
-                required rows={4}
-                placeholder="اكتب سؤالك هنا بوضوح..."
+                rows={4}
+                placeholder="اكتب سؤالك هنا بوضوح... أو أرفق صورة بالأسفل"
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none text-base"
               />
+            </div>
+
+            {/* Image attachment */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">صورة (اختياري)</label>
+              {imagePreview ? (
+                <div className="relative inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={imagePreview} alt="معاينة الصورة"
+                    className="max-h-48 rounded-xl border border-gray-200" />
+                  <button type="button" onClick={clearImage}
+                    className="absolute -top-2 -left-2 bg-red-500 text-white w-6 h-6 rounded-full text-sm leading-none hover:bg-red-600 shadow">×</button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-4 py-6 cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors text-gray-400 text-sm">
+                  <span className="text-2xl">📷</span>
+                  <span>اضغط لإرفاق صورة (مثل صورة من كتاب أو وثيقة)</span>
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                </label>
+              )}
             </div>
 
             {/* Name/email only for guests */}

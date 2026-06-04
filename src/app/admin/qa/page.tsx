@@ -267,6 +267,7 @@ export default function AdminQAPage() {
                   onSaveAndPublish={() => saveQA(q.id, true)}
                   onTogglePublish={() => togglePublish(q.id, q.published)}
                   onDelete={() => deleteQA(q.id)}
+                  onRefresh={load}
                 />
               ))}
             </div>
@@ -333,14 +334,36 @@ function SectionRow({ section, onDelete, onUpdate }: {
 /* ── Q&A Row ────────────────────────────────────────────────────────────────── */
 function QARow({ item, sections, editId, editAnswer, editSectionId, editPublished,
   onEdit, onCancelEdit, onChangeAnswer, onChangeSectionId, onChangePublished,
-  onSave, onSaveAndPublish, onTogglePublish, onDelete }: {
+  onSave, onSaveAndPublish, onTogglePublish, onDelete, onRefresh }: {
   item: QA; sections: QASection[];
   editId: string | null; editAnswer: string; editSectionId: string; editPublished: boolean;
   onEdit: () => void; onCancelEdit: () => void;
   onChangeAnswer: (v: string) => void; onChangeSectionId: (v: string) => void; onChangePublished: (v: boolean) => void;
   onSave: () => void; onSaveAndPublish: () => void; onTogglePublish: () => void; onDelete: () => void;
+  onRefresh: () => void;
 }) {
   const isEditing = editId === item.id;
+  const [uploading, setUploading] = useState(false);
+
+  async function uploadAnswerImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("image", file);
+    await fetch(`/api/qa/${item.id}/answer-image`, { method: "POST", body: fd });
+    setUploading(false);
+    onRefresh();
+  }
+
+  async function removeAnswerImage() {
+    await fetch(`/api/qa/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answer_image_url: null }),
+    });
+    onRefresh();
+  }
   const sectionName = sections.find((s) => s.id === item.section_id)?.title;
   const sourceColor: Record<string, string> = {
     website: "bg-green-50 text-green-600",
@@ -354,6 +377,13 @@ function QARow({ item, sections, editId, editAnswer, editSectionId, editPublishe
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex-1">
           <p className="font-semibold text-green-900 leading-relaxed">س: {item.question}</p>
+          {item.image_url && (
+            <a href={item.image_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={item.image_url} alt="صورة السؤال"
+                className="max-h-40 rounded-lg border border-gray-200 hover:opacity-90 transition-opacity" />
+            </a>
+          )}
           {item.submitter_name && <p className="text-xs text-gray-400 mt-0.5">من: {item.submitter_name}</p>}
         </div>
         <button onClick={onDelete} className="text-red-400 hover:text-red-600 text-xs shrink-0">حذف</button>
@@ -382,6 +412,26 @@ function QARow({ item, sections, editId, editAnswer, editSectionId, editPublishe
             rows={5} placeholder="اكتب إجابة الشيخ هنا..."
             autoFocus
             className="w-full border border-green-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-y" />
+
+          {/* Answer image */}
+          <div>
+            <label className="text-sm text-gray-600 block mb-1.5">صورة الإجابة (اختياري):</label>
+            {item.answer_image_url ? (
+              <div className="relative inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.answer_image_url} alt="صورة الإجابة"
+                  className="max-h-40 rounded-lg border border-gray-200" />
+                <button type="button" onClick={removeAnswerImage}
+                  className="absolute -top-2 -left-2 bg-red-500 text-white w-6 h-6 rounded-full text-sm leading-none hover:bg-red-600 shadow">×</button>
+              </div>
+            ) : (
+              <label className="inline-flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-4 py-2 cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors text-gray-500 text-xs">
+                <span>📷</span>
+                <span>{uploading ? "جاري الرفع..." : "إرفاق صورة للإجابة"}</span>
+                <input type="file" accept="image/*" disabled={uploading} onChange={uploadAnswerImage} className="hidden" />
+              </label>
+            )}
+          </div>
           <div className="flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-2">
               <label className="text-sm text-gray-600">القسم:</label>
@@ -411,7 +461,7 @@ function QARow({ item, sections, editId, editAnswer, editSectionId, editPublishe
         </div>
       ) : (
         <div>
-          {(item.answer || item.audio_url) ? (
+          {(item.answer || item.audio_url || item.answer_image_url) ? (
             <div className="border-t border-gray-100 pt-3">
               {item.answer && (
                 <p className="text-gray-600 text-sm leading-relaxed">
@@ -426,6 +476,13 @@ function QARow({ item, sections, editId, editAnswer, editSectionId, editPublishe
                     <source src={item.audio_url} />
                   </audio>
                 </div>
+              )}
+              {item.answer_image_url && (
+                <a href={item.answer_image_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.answer_image_url} alt="صورة الإجابة"
+                    className="max-h-40 rounded-lg border border-gray-200 hover:opacity-90 transition-opacity" />
+                </a>
               )}
               <button onClick={onEdit} className="text-gray-400 hover:underline text-xs mt-2 block">تعديل الإجابة</button>
             </div>
