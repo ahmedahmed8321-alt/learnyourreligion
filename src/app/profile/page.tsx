@@ -74,20 +74,20 @@ function ProfileContent() {
       )}
 
       {/* Profile header */}
-      <div className="bg-white rounded-2xl shadow p-6 mb-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-2xl">
+      <div className="bg-white rounded-2xl shadow p-5 sm:p-6 mb-6 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="w-14 h-14 shrink-0 bg-green-100 rounded-full flex items-center justify-center text-2xl">
             👤
           </div>
-          <div>
-            <h1 className="font-bold text-green-900 text-xl">
+          <div className="min-w-0">
+            <h1 className="font-bold text-green-900 text-xl truncate">
               {user?.user_metadata?.name ?? "مستخدم"}
             </h1>
-            <p className="text-gray-400 text-sm" dir="ltr">{user?.email}</p>
+            <p className="text-gray-400 text-sm truncate" dir="ltr">{user?.email}</p>
           </div>
         </div>
         <button onClick={signOut}
-          className="text-sm text-red-500 hover:text-red-700 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors">
+          className="shrink-0 text-sm text-red-500 hover:text-red-700 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors">
           تسجيل الخروج
         </button>
       </div>

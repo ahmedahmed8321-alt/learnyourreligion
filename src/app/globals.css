@@ -33,6 +33,13 @@ body {
 a, button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 img, video { max-width: 100%; }
 
+/* Prevent iOS Safari from auto-zooming when focusing a small-font input.
+   Inputs below 16px trigger a zoom that often leaves the layout shifted on
+   iPhone. Forcing 16px on small screens keeps the page stable. */
+@media (max-width: 640px) {
+  input, textarea, select { font-size: 16px !important; }
+}
+
 /* ── Section Title ─────────────────────────────────────────────────────────── */
 .section-title {
   @apply text-2xl font-bold text-green-900 flex items-center gap-3 mb-6;
