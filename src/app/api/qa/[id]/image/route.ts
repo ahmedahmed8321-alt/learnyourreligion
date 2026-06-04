@@ -8,6 +8,8 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface Props { params: { id: string } }
 
+// Upload (or replace) the question/answer image of an existing QA item.
+// form fields: image (File), target ("question" | "answer")
 export async function POST(req: Request, { params }: Props) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,6 +17,8 @@ export async function POST(req: Request, { params }: Props) {
   try {
     const form = await req.formData();
     const image = form.get("image") as File | null;
+    const target = (form.get("target") as string) === "answer" ? "answer" : "question";
+    const column = target === "answer" ? "answer_image_url" : "image_url";
 
     if (!image || image.size === 0) {
       return NextResponse.json({ error: "الصورة مطلوبة" }, { status: 400 });
@@ -28,7 +32,7 @@ export async function POST(req: Request, { params }: Props) {
 
     const supabase = getSupabaseAdmin();
     const safeName = image.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    const path = `qa/answers/${Date.now()}-${safeName}`;
+    const path = `qa/${target === "answer" ? "answers" : "questions"}/${Date.now()}-${safeName}`;
     const bytes = await image.arrayBuffer();
 
     const { error: uploadErr } = await supabase.storage
@@ -36,11 +40,11 @@ export async function POST(req: Request, { params }: Props) {
       .upload(path, bytes, { contentType: image.type, upsert: false });
     if (uploadErr) throw uploadErr;
 
-    const answer_image_url = supabase.storage.from("summaries").getPublicUrl(path).data.publicUrl;
+    const publicUrl = supabase.storage.from("summaries").getPublicUrl(path).data.publicUrl;
 
     const { data, error } = await supabase
       .from("qa")
-      .update({ answer_image_url })
+      .update({ [column]: publicUrl })
       .eq("id", params.id)
       .select()
       .single();
@@ -48,7 +52,7 @@ export async function POST(req: Request, { params }: Props) {
 
     return NextResponse.json(data);
   } catch (err: any) {
-    console.error("QA answer image upload error:", err);
+    console.error("QA image upload error:", err);
     return NextResponse.json({ error: err.message ?? "حدث خطأ" }, { status: 500 });
   }
 }

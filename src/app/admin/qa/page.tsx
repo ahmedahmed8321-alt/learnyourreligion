@@ -13,6 +13,7 @@ export default function AdminQAPage() {
   const [tab, setTab] = useState<Tab>("pending");
   const [sourceFilter, setSourceFilter] = useState<Source>("all");
   const [editId, setEditId] = useState<string | null>(null);
+  const [editQuestion, setEditQuestion] = useState("");
   const [editAnswer, setEditAnswer] = useState("");
   const [editSectionId, setEditSectionId] = useState<string>("");
   const [editPublished, setEditPublished] = useState(true);
@@ -52,10 +53,15 @@ export default function AdminQAPage() {
   );
 
   async function saveQA(id: string, publish?: boolean) {
+    if (!editQuestion.trim()) {
+      alert("نص السؤال مطلوب");
+      return;
+    }
     await fetch(`/api/qa/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        question: editQuestion.trim(),
         answer: editAnswer || null,
         section_id: editSectionId || null,
         published: publish ?? editPublished,
@@ -279,10 +285,10 @@ export default function AdminQAPage() {
             <div className="space-y-3">
               {filtered.map((q) => (
                 <QARow key={q.id} item={q} sections={sections}
-                  editId={editId} editAnswer={editAnswer} editSectionId={editSectionId} editPublished={editPublished}
-                  onEdit={() => { setEditId(q.id); setEditAnswer(q.answer ?? ""); setEditSectionId(q.section_id ?? ""); setEditPublished(q.published); }}
+                  editId={editId} editQuestion={editQuestion} editAnswer={editAnswer} editSectionId={editSectionId} editPublished={editPublished}
+                  onEdit={() => { setEditId(q.id); setEditQuestion(q.question ?? ""); setEditAnswer(q.answer ?? ""); setEditSectionId(q.section_id ?? ""); setEditPublished(q.published); }}
                   onCancelEdit={() => setEditId(null)}
-                  onChangeAnswer={setEditAnswer} onChangeSectionId={setEditSectionId} onChangePublished={setEditPublished}
+                  onChangeQuestion={setEditQuestion} onChangeAnswer={setEditAnswer} onChangeSectionId={setEditSectionId} onChangePublished={setEditPublished}
                   onSave={() => saveQA(q.id)}
                   onSaveAndPublish={() => saveQA(q.id, true)}
                   onTogglePublish={() => togglePublish(q.id, q.published)}
@@ -392,35 +398,38 @@ function ImagePicker({ label, file, onChange }: {
   );
 }
 
-function QARow({ item, sections, editId, editAnswer, editSectionId, editPublished,
-  onEdit, onCancelEdit, onChangeAnswer, onChangeSectionId, onChangePublished,
+function QARow({ item, sections, editId, editQuestion, editAnswer, editSectionId, editPublished,
+  onEdit, onCancelEdit, onChangeQuestion, onChangeAnswer, onChangeSectionId, onChangePublished,
   onSave, onSaveAndPublish, onTogglePublish, onDelete, onRefresh }: {
   item: QA; sections: QASection[];
-  editId: string | null; editAnswer: string; editSectionId: string; editPublished: boolean;
+  editId: string | null; editQuestion: string; editAnswer: string; editSectionId: string; editPublished: boolean;
   onEdit: () => void; onCancelEdit: () => void;
-  onChangeAnswer: (v: string) => void; onChangeSectionId: (v: string) => void; onChangePublished: (v: boolean) => void;
+  onChangeQuestion: (v: string) => void; onChangeAnswer: (v: string) => void; onChangeSectionId: (v: string) => void; onChangePublished: (v: boolean) => void;
   onSave: () => void; onSaveAndPublish: () => void; onTogglePublish: () => void; onDelete: () => void;
   onRefresh: () => void;
 }) {
   const isEditing = editId === item.id;
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<"question" | "answer" | null>(null);
 
-  async function uploadAnswerImage(e: React.ChangeEvent<HTMLInputElement>) {
+  async function uploadImage(e: React.ChangeEvent<HTMLInputElement>, target: "question" | "answer") {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
+    if (file.size > 10 * 1024 * 1024) { alert("حجم الصورة يتجاوز 10 ميجابايت"); return; }
+    setUploading(target);
     const fd = new FormData();
     fd.append("image", file);
-    await fetch(`/api/qa/${item.id}/answer-image`, { method: "POST", body: fd });
-    setUploading(false);
+    fd.append("target", target);
+    await fetch(`/api/qa/${item.id}/image`, { method: "POST", body: fd });
+    setUploading(null);
     onRefresh();
   }
 
-  async function removeAnswerImage() {
+  async function removeImage(target: "question" | "answer") {
+    const column = target === "answer" ? "answer_image_url" : "image_url";
     await fetch(`/api/qa/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answer_image_url: null }),
+      body: JSON.stringify({ [column]: null }),
     });
     onRefresh();
   }
@@ -468,9 +477,37 @@ function QARow({ item, sections, editId, editAnswer, editSectionId, editPublishe
       {/* Edit mode */}
       {isEditing ? (
         <div className="space-y-3 border-t border-gray-100 pt-3">
+          {/* Question text */}
+          <div>
+            <label className="text-sm text-gray-600 block mb-1.5">نص السؤال:</label>
+            <textarea value={editQuestion} onChange={(e) => onChangeQuestion(e.target.value)}
+              rows={2} placeholder="نص السؤال..."
+              autoFocus
+              className="w-full border border-green-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-y" />
+          </div>
+
+          {/* Question image */}
+          <div>
+            <label className="text-sm text-gray-600 block mb-1.5">صورة السؤال (اختياري):</label>
+            {item.image_url ? (
+              <div className="relative inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.image_url} alt="صورة السؤال"
+                  className="max-h-40 rounded-lg border border-gray-200" />
+                <button type="button" onClick={() => removeImage("question")}
+                  className="absolute -top-2 -left-2 bg-red-500 text-white w-6 h-6 rounded-full text-sm leading-none hover:bg-red-600 shadow">×</button>
+              </div>
+            ) : (
+              <label className="inline-flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-4 py-2 cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors text-gray-500 text-xs">
+                <span>📷</span>
+                <span>{uploading === "question" ? "جاري الرفع..." : "إرفاق صورة للسؤال"}</span>
+                <input type="file" accept="image/*" disabled={uploading !== null} onChange={(e) => uploadImage(e, "question")} className="hidden" />
+              </label>
+            )}
+          </div>
+
           <textarea value={editAnswer} onChange={(e) => onChangeAnswer(e.target.value)}
             rows={5} placeholder="اكتب إجابة الشيخ هنا..."
-            autoFocus
             className="w-full border border-green-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-y" />
 
           {/* Answer image */}
@@ -481,14 +518,14 @@ function QARow({ item, sections, editId, editAnswer, editSectionId, editPublishe
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={item.answer_image_url} alt="صورة الإجابة"
                   className="max-h-40 rounded-lg border border-gray-200" />
-                <button type="button" onClick={removeAnswerImage}
+                <button type="button" onClick={() => removeImage("answer")}
                   className="absolute -top-2 -left-2 bg-red-500 text-white w-6 h-6 rounded-full text-sm leading-none hover:bg-red-600 shadow">×</button>
               </div>
             ) : (
               <label className="inline-flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-4 py-2 cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors text-gray-500 text-xs">
                 <span>📷</span>
-                <span>{uploading ? "جاري الرفع..." : "إرفاق صورة للإجابة"}</span>
-                <input type="file" accept="image/*" disabled={uploading} onChange={uploadAnswerImage} className="hidden" />
+                <span>{uploading === "answer" ? "جاري الرفع..." : "إرفاق صورة للإجابة"}</span>
+                <input type="file" accept="image/*" disabled={uploading !== null} onChange={(e) => uploadImage(e, "answer")} className="hidden" />
               </label>
             )}
           </div>
