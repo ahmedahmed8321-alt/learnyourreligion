@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 
 // Matches http(s):// URLs and bare www. links
