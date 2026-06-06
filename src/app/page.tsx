@@ -3,6 +3,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import type { Video, Article, QA } from "@/lib/supabase";
 import Linkify from "@/components/Linkify";
+import VideoEmbedCard from "@/components/VideoEmbedCard";
 
 async function getContent() {
   const [videosRes, articlesRes, qaRes, vcRes, acRes, qcRes] = await Promise.all([
@@ -99,7 +100,7 @@ export default async function HomePage() {
             <EmptyState message="لا توجد مقاطع بعد — سيتم مزامنتها تلقائياً من قناة اليوتيوب" />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {videos.map((v) => <VideoCard key={v.id} video={v} />)}
+              {videos.map((v) => <VideoEmbedCard key={v.id} video={v} variant="home" />)}
             </div>
           )}
         </section>
@@ -185,39 +186,6 @@ function EmptyState({ message }: { message: string }) {
     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-12 text-center text-gray-400 text-sm">
       {message}
     </div>
-  );
-}
-
-function VideoCard({ video }: { video: Video }) {
-  return (
-    <a href={`https://www.youtube.com/watch?v=${video.youtube_id}`}
-      target="_blank" rel="noopener noreferrer"
-      className="group bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1">
-      <div className="relative overflow-hidden">
-        <Image src={video.thumbnail_url} alt={video.title}
-          width={480} height={270}
-          className="w-full aspect-video object-cover group-hover:scale-105 transition-transform duration-500" />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-          <span className="bg-red-600 text-white rounded-full p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity scale-75 group-hover:scale-100 duration-300">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-            </svg>
-          </span>
-        </div>
-        {/* YouTube badge */}
-        <span className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded font-bold">
-          YouTube
-        </span>
-      </div>
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 leading-relaxed group-hover:text-green-700 transition-colors">
-          {video.title}
-        </h3>
-        <p className="text-gray-400 text-xs mt-2">
-          {new Date(video.published_at).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })}
-        </p>
-      </div>
-    </a>
   );
 }
 

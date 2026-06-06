@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import type { Video, Playlist } from "@/lib/supabase";
+import VideoEmbedCard from "@/components/VideoEmbedCard";
 
 export const revalidate = 3600;
 
@@ -99,7 +100,7 @@ export default async function PlaylistPage({ params, searchParams }: Props) {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {videos.map((v) => (
-              <VideoCard key={v.id} video={v} />
+              <VideoEmbedCard key={v.id} video={v} variant="grid" />
             ))}
           </div>
 
@@ -128,31 +129,6 @@ export default async function PlaylistPage({ params, searchParams }: Props) {
         </>
       )}
     </div>
-  );
-}
-
-function VideoCard({ video }: { video: Video }) {
-  return (
-    <a href={`https://www.youtube.com/watch?v=${video.youtube_id}`}
-      target="_blank" rel="noopener noreferrer"
-      className="group bg-white rounded-xl overflow-hidden shadow hover:shadow-xl transition-all flex flex-col">
-      <div className="relative">
-        <Image src={video.thumbnail_url} alt={video.title}
-          width={320} height={180}
-          className="w-full aspect-video object-cover group-hover:brightness-75 transition-all" />
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="bg-red-600 text-white rounded-full p-3 shadow-xl">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
-            </svg>
-          </span>
-        </div>
-      </div>
-      <div className="p-2 flex-1 flex flex-col">
-        <h3 className="font-medium text-gray-800 text-xs line-clamp-2 leading-relaxed flex-1">{video.title}</h3>
-        <p className="text-gray-400 text-xs mt-1">{new Date(video.published_at).toLocaleDateString("ar-EG")}</p>
-      </div>
-    </a>
   );
 }
 
