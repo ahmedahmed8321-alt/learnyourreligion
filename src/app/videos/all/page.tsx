@@ -16,16 +16,37 @@ export default async function AllVideosPage({ searchParams }: Props) {
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
+  // Sanitise for PostgREST .or() filter (commas/parens/wildcards would break it)
+  const safe = search.replace(/[(),*%]/g, " ").trim();
+
+  // Only load the (large) transcript column when actually searching
+  const cols = search
+    ? "*"
+    : "id,youtube_id,title,description,thumbnail_url,published_at,view_count,created_at";
+
   let query = supabase
     .from("videos")
-    .select("*", { count: "exact" })
+    .select(cols, { count: "exact" })
     .order("published_at", { ascending: false })
     .range(from, to);
 
-  if (search) query = query.ilike("title", `%${search}%`);
+  if (safe) {
+    query = query.or(`title.ilike.%${safe}%,description.ilike.%${safe}%,transcript.ilike.%${safe}%`);
+  }
 
   const { data, count, error } = await query;
-  const videos = (data ?? []) as Video[];
+  const videos = (data ?? []) as unknown as Video[];
+
+  // Build a transcript snippet around the matched term (for search results)
+  function snippetFor(v: Video): { text: string; q: string } | undefined {
+    if (!safe || !v.transcript) return undefined;
+    let idx = v.transcript.indexOf(safe);
+    if (idx === -1) idx = v.transcript.toLowerCase().indexOf(safe.toLowerCase());
+    if (idx === -1) return undefined;
+    const start = Math.max(0, idx - 60);
+    const end = Math.min(v.transcript.length, idx + safe.length + 90);
+    return { text: v.transcript.slice(start, end).trim(), q: safe };
+  }
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
 
   return (
@@ -49,7 +70,7 @@ export default async function AllVideosPage({ searchParams }: Props) {
       {/* Search */}
       <form method="GET" className="mb-6 relative max-w-xl">
         <input type="text" name="q" defaultValue={search}
-          placeholder="ابحث في المقاطع..."
+          placeholder="ابحث في عناوين المقاطع وداخل النصوص..."
           className="w-full border border-gray-200 rounded-xl px-5 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:ring-green-500 bg-white" />
         <button type="submit" className="absolute right-4 top-3.5">
           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,7 +89,7 @@ export default async function AllVideosPage({ searchParams }: Props) {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {videos.map((v) => (
-              <VideoEmbedCard key={v.id} video={v} variant="grid" />
+              <VideoEmbedCard key={v.id} video={v} variant="grid" snippet={snippetFor(v)} />
             ))}
           </div>
 

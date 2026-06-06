@@ -24,6 +24,9 @@ export interface Video {
   published_at: string;
   view_count: number | null;
   created_at: string;
+  transcript?: string | null;
+  transcript_status?: string | null;
+  transcript_fetched_at?: string | null;
 }
 
 export interface Article {

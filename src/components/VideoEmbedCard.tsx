@@ -4,13 +4,21 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { Video } from "@/lib/supabase";
 
+interface Snippet { text: string; q: string }
+
 /** A video thumbnail card that opens the video in an embedded lightbox player
- *  (stays on the site) instead of redirecting to YouTube. */
-export default function VideoEmbedCard({ video, variant = "grid" }: { video: Video; variant?: "home" | "grid" }) {
+ *  (stays on the site) with a transcript panel, instead of redirecting to YouTube. */
+export default function VideoEmbedCard({ video, variant = "grid", snippet }: { video: Video; variant?: "home" | "grid"; snippet?: Snippet }) {
   const [open, setOpen] = useState(false);
 
   const date = new Date(video.published_at).toLocaleDateString("ar-EG",
     variant === "home" ? { year: "numeric", month: "long", day: "numeric" } : undefined);
+
+  const SnippetEl = snippet ? (
+    <p className="text-[11px] text-gray-600 mt-1.5 line-clamp-2 leading-relaxed bg-yellow-50 rounded px-2 py-1">
+      <span className="text-gray-400">…</span><Highlight text={snippet.text} q={snippet.q} /><span className="text-gray-400">…</span>
+    </p>
+  ) : null;
 
   return (
     <>
@@ -30,6 +38,7 @@ export default function VideoEmbedCard({ video, variant = "grid" }: { video: Vid
           <div className="p-4">
             <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 leading-relaxed group-hover:text-green-700 transition-colors">{video.title}</h3>
             <p className="text-gray-400 text-xs mt-2">{date}</p>
+            {SnippetEl}
           </div>
         </button>
       ) : (
@@ -45,16 +54,19 @@ export default function VideoEmbedCard({ video, variant = "grid" }: { video: Vid
           <div className="p-2 flex-1 flex flex-col">
             <h3 className="font-medium text-gray-800 text-xs line-clamp-2 leading-relaxed flex-1">{video.title}</h3>
             <p className="text-gray-400 text-xs mt-1">{date}</p>
+            {SnippetEl}
           </div>
         </button>
       )}
 
-      {open && <VideoModal video={video} onClose={() => setOpen(false)} />}
+      {open && <VideoModal video={video} highlight={snippet?.q} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-function VideoModal({ video, onClose }: { video: Video; onClose: () => void }) {
+function VideoModal({ video, highlight, onClose }: { video: Video; highlight?: string; onClose: () => void }) {
+  const [tr, setTr] = useState<{ loading: boolean; text: string | null; open: boolean }>({ loading: false, text: null, open: false });
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
@@ -66,12 +78,24 @@ function VideoModal({ video, onClose }: { video: Video; onClose: () => void }) {
     };
   }, [onClose]);
 
+  async function toggleTranscript() {
+    if (tr.text !== null) { setTr((s) => ({ ...s, open: !s.open })); return; }
+    setTr({ loading: true, text: null, open: true });
+    try {
+      const r = await fetch(`/api/videos/transcript?id=${video.youtube_id}`);
+      const d = await r.json();
+      setTr({ loading: false, text: d.transcript ?? "", open: true });
+    } catch {
+      setTr({ loading: false, text: "", open: true });
+    }
+  }
+
   return (
-    <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4"
+    <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4 overflow-y-auto"
       onClick={onClose} role="dialog" aria-modal="true">
-      <div className="relative w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+      <div className="relative w-full max-w-4xl my-auto" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} aria-label="إغلاق"
-          className="absolute -top-10 left-0 text-white/80 hover:text-white flex items-center gap-1 text-sm">
+          className="absolute -top-9 left-0 text-white/80 hover:text-white flex items-center gap-1 text-sm">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -87,13 +111,37 @@ function VideoModal({ video, onClose }: { video: Video; onClose: () => void }) {
           />
         </div>
         <p className="text-white/90 text-sm mt-3 text-center line-clamp-2">{video.title}</p>
-        <a href={`https://www.youtube.com/watch?v=${video.youtube_id}`} target="_blank" rel="noopener noreferrer"
-          className="block text-center text-white/50 hover:text-white/80 text-xs mt-1">
-          فتح في يوتيوب ↗
-        </a>
+
+        {/* Transcript */}
+        <div className="mt-2 flex items-center justify-center gap-4">
+          <button onClick={toggleTranscript} className="text-white/80 hover:text-white text-sm flex items-center gap-1">
+            📄 {tr.open ? "إخفاء النص" : "عرض النص"}
+          </button>
+          <a href={`https://www.youtube.com/watch?v=${video.youtube_id}`} target="_blank" rel="noopener noreferrer"
+            className="text-white/50 hover:text-white/80 text-xs">فتح في يوتيوب ↗</a>
+        </div>
+        {tr.open && (
+          <div className="mt-2 max-h-64 overflow-y-auto bg-white/95 rounded-lg p-4 text-sm text-gray-800 leading-loose">
+            {tr.loading ? "جاري تحميل النص..." :
+              tr.text ? <Highlight text={tr.text} q={highlight} /> :
+              <span className="text-gray-400">لا يتوفر نص لهذا المقطع بعد. تتم إضافة النصوص تلقائياً.</span>}
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+function escapeRegExp(s: string) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+function Highlight({ text, q }: { text: string; q?: string }) {
+  if (!q || !q.trim()) return <>{text}</>;
+  const parts = text.split(new RegExp(`(${escapeRegExp(q.trim())})`, "gi"));
+  return <>{parts.map((p, i) =>
+    p.toLowerCase() === q.trim().toLowerCase()
+      ? <mark key={i} className="bg-yellow-300 rounded px-0.5">{p}</mark>
+      : <span key={i}>{p}</span>
+  )}</>;
 }
 
 function PlayIcon() {
