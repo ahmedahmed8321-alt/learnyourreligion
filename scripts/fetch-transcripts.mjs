@@ -107,14 +107,18 @@ async function main() {
         none++; console.log(`none  ${v.youtube_id}  (no subtitles)`);
       }
     } catch (e) {
-      const msg = String((e && e.stderr) || (e && e.message) || "");
+      const stderr = e && e.stderr ? e.stderr.toString() : "";
+      const msg = stderr || (e && e.message) || "";
+      // Pick the most meaningful line of yt-dlp output (prefer the ERROR: line)
+      const lines = msg.split("\n").map((l) => l.trim()).filter(Boolean);
+      const reason = lines.find((l) => /^ERROR/i.test(l)) || lines[lines.length - 1] || "(no output)";
       // "no subtitles" style failures = permanently none; everything else = retryable error
-      if (/no subtitles|requested format is not available|members-only|unavailable/i.test(msg)) {
+      if (/no subtitles|requested format is not available|members-only|unavailable|video is private/i.test(msg)) {
         await setStatus(v.id, { transcript_status: "none" });
-        none++; console.log(`none  ${v.youtube_id}  (${msg.split("\n")[0].slice(0, 80)})`);
+        none++; console.log(`none  ${v.youtube_id}  (${reason.slice(0, 90)})`);
       } else {
         await setStatus(v.id, { transcript_status: "error" });
-        err++; console.log(`ERROR ${v.youtube_id}  (${msg.split("\n").pop().slice(0, 100)})`);
+        err++; console.log(`ERROR ${v.youtube_id}  ${reason.slice(0, 160)}`);
       }
     } finally {
       await rm(dir, { recursive: true, force: true });
