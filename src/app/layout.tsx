@@ -3,17 +3,20 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PWARegister from "@/components/PWARegister";
 
 export const metadata: Metadata = {
   title: "تعلم دينك لتنجو وتسعد",
   description: "موقع الشيخ محمود لاشين — مقاطع، مقالات، ملخصات، أسئلة وأجوبة",
   keywords: ["إسلام", "دروس دينية", "فتاوى", "مقالات إسلامية", "الشيخ محمود لاشين"],
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#15803d",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="flex flex-col min-h-screen">
         <Providers>
+          <PWARegister />
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />

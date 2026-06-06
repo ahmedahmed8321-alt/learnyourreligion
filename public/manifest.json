@@ -1,0 +1,29 @@
+{
+  "name": "تعلم دينك لتنجو وتسعد",
+  "short_name": "تعلم دينك",
+  "description": "موقع الشيخ محمود لاشين — مقاطع، مقالات، ملخصات، أسئلة وأجوبة",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0d3320",
+  "theme_color": "#15803d",
+  "icons": [
+    { "src": "/logo.png", "sizes": "640x640", "type": "image/jpeg", "purpose": "any" },
+    { "src": "/logo.png", "sizes": "640x640", "type": "image/jpeg", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        { "name": "file", "accept": ["audio/*", "image/*"] }
+      ]
+    }
+  }
+}
