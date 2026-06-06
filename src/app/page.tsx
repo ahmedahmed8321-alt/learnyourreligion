@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import type { Video, Article, QA } from "@/lib/supabase";
+import Linkify from "@/components/Linkify";
 
 async function getContent() {
   const [videosRes, articlesRes, qaRes, vcRes, acRes, qcRes] = await Promise.all([
@@ -251,12 +252,12 @@ function QACard({ item }: { item: QA }) {
     <div className="bg-white rounded-2xl p-5 shadow-card hover:shadow-card-hover transition-all duration-300 border-r-4 border-yellow-400">
       <div className="flex items-start gap-3 mb-3">
         <span className="shrink-0 w-7 h-7 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-bold">س</span>
-        <p className="font-semibold text-green-900 text-sm leading-relaxed">{item.question}</p>
+        <p className="font-semibold text-green-900 text-sm leading-relaxed"><Linkify text={item.question} /></p>
       </div>
       {item.answer && (
         <div className="flex items-start gap-3 mr-0">
           <span className="shrink-0 w-7 h-7 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm font-bold">ج</span>
-          <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">{item.answer}</p>
+          <p className="text-gray-600 text-sm leading-relaxed line-clamp-3"><Linkify text={item.answer} /></p>
         </div>
       )}
     </div>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import type { QA } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
+import Linkify from "@/components/Linkify";
 
 export default function ProfilePage() {
   return (
@@ -143,7 +144,7 @@ function ProfileContent() {
           {questions.map((q) => (
             <div key={q.id} className={`bg-white rounded-xl shadow p-5 border-r-4 ${q.answer ? "border-green-500" : "border-yellow-400"}`}>
               <div className="flex items-start justify-between gap-3 mb-2">
-                <p className="font-semibold text-green-900 leading-relaxed">س: {q.question}</p>
+                <p className="font-semibold text-green-900 leading-relaxed">س: <Linkify text={q.question} /></p>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   {q.is_private && (
                     <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">🔒 خاص</span>
@@ -158,9 +159,9 @@ function ProfileContent() {
 
               {q.answer ? (
                 <div className="border-t border-gray-100 pt-3 mt-2">
-                  <p className="text-gray-700 text-sm leading-loose">
+                  <p className="text-gray-700 text-sm leading-loose whitespace-pre-line">
                     <span className="font-semibold text-yellow-600 ml-1">ج:</span>
-                    {q.answer}
+                    <Linkify text={q.answer} />
                   </p>
                 </div>
               ) : (

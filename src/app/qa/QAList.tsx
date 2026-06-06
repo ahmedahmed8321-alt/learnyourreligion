@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { QA } from "@/lib/supabase";
+import Linkify from "@/components/Linkify";
 
 export default function QAList({ items }: { items: QA[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -41,13 +42,17 @@ export default function QAList({ items }: { items: QA[] }) {
               className={`bg-white rounded-xl border-r-4 transition-shadow ${
                 openId === q.id ? "border-yellow-500 shadow-md" : "border-green-600 shadow"
               }`}>
-              <button
+              <div
+                role="button" tabIndex={0}
                 onClick={() => setOpenId(openId === q.id ? null : q.id)}
-                className="w-full text-right px-5 py-4 flex items-start justify-between gap-3 hover:bg-gray-50 rounded-xl transition-colors"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenId(openId === q.id ? null : q.id); }
+                }}
+                className="w-full text-right px-5 py-4 flex items-start justify-between gap-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
               >
                 <span className="font-semibold text-green-900 text-base leading-relaxed flex items-center gap-1.5">
                   {q.image_url && <span title="يحتوي على صورة">📷</span>}
-                  {q.question}
+                  <span><Linkify text={q.question} /></span>
                 </span>
                 <svg
                   className={`w-5 h-5 text-green-600 shrink-0 mt-0.5 transition-transform ${openId === q.id ? "rotate-180" : ""}`}
@@ -55,7 +60,7 @@ export default function QAList({ items }: { items: QA[] }) {
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
                 </svg>
-              </button>
+              </div>
 
               {openId === q.id && (q.answer || q.audio_url || q.image_url || q.answer_image_url) && (
                 <div className="px-5 pb-5 border-t border-gray-100">
@@ -71,7 +76,7 @@ export default function QAList({ items }: { items: QA[] }) {
                     {q.answer && (
                       <p className="text-gray-700 text-base leading-loose whitespace-pre-line">
                         <span className="font-semibold text-yellow-600 ml-1">الجواب:</span>
-                        {q.answer}
+                        <Linkify text={q.answer} />
                       </p>
                     )}
                     {q.audio_url && (

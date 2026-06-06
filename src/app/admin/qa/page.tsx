@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { QA, QASection } from "@/lib/supabase";
+import Linkify from "@/components/Linkify";
 
 type Tab = "pending" | "published" | "sections";
 type Source = "all" | "website" | "telegram" | "manual";
@@ -445,7 +446,7 @@ function QARow({ item, sections, editId, editQuestion, editAnswer, editSectionId
       {/* Question header */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex-1">
-          <p className="font-semibold text-green-900 leading-relaxed">س: {item.question}</p>
+          <p className="font-semibold text-green-900 leading-relaxed">س: <Linkify text={item.question} /></p>
           {item.image_url && (
             <a href={item.image_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -561,9 +562,9 @@ function QARow({ item, sections, editId, editQuestion, editAnswer, editSectionId
           {(item.answer || item.audio_url || item.answer_image_url) ? (
             <div className="border-t border-gray-100 pt-3">
               {item.answer && (
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
                   <span className="font-semibold text-yellow-600 ml-1">ج:</span>
-                  {item.answer}
+                  <Linkify text={item.answer} />
                 </p>
               )}
               {item.audio_url && (
