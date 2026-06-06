@@ -50,11 +50,12 @@ export async function POST(req: Request) {
     const image = form.get("image") as File | null;
     const answerImage = form.get("answer_image") as File | null;
     // Pre-uploaded URLs (e.g. from the WhatsApp share flow)
-    const audioUrlIn = (form.get("audio_url") as string) || null;
+    const audioUrlIn = (form.get("audio_url") as string) || null;            // answer voice
+    const questionAudioUrlIn = (form.get("question_audio_url") as string) || null; // question voice
     const imageUrlIn = (form.get("image_url") as string) || null;
 
     // A question must have text, an image, or audio
-    if (!question && !(image && image.size > 0) && !imageUrlIn && !audioUrlIn) {
+    if (!question && !(image && image.size > 0) && !imageUrlIn && !audioUrlIn && !questionAudioUrlIn) {
       return NextResponse.json({ error: "اكتب السؤال أو أرفق صورة" }, { status: 400 });
     }
 
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
       answer_image_url = await uploadQAImage(supabase, answerImage, "answers");
     }
 
-    const fallbackQuestion = audioUrlIn ? "(رسالة صوتية)" : "(سؤال بصورة)";
+    const fallbackQuestion = (questionAudioUrlIn || audioUrlIn) ? "(رسالة صوتية)" : "(سؤال بصورة)";
 
     const { data, error } = await supabase.from("qa").insert({
       question: question || fallbackQuestion,
@@ -77,6 +78,7 @@ export async function POST(req: Request) {
       image_url,
       answer_image_url,
       audio_url: audioUrlIn,
+      question_audio_url: questionAudioUrlIn,
       source: "manual",
       published,
     }).select().single();

@@ -62,6 +62,7 @@ export interface QA {
   question: string;
   answer: string | null;
   audio_url: string | null;
+  question_audio_url: string | null;
   image_url: string | null;
   answer_image_url: string | null;
   source: "telegram" | "manual" | "website";

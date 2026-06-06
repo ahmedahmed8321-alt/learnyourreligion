@@ -157,12 +157,40 @@ function ProfileContent() {
                 </div>
               </div>
 
-              {q.answer ? (
-                <div className="border-t border-gray-100 pt-3 mt-2">
-                  <p className="text-gray-700 text-sm leading-loose whitespace-pre-line">
-                    <span className="font-semibold text-yellow-600 ml-1">ج:</span>
-                    <Linkify text={q.answer} />
-                  </p>
+              {/* Question media */}
+              {q.image_url && (
+                <a href={q.image_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={q.image_url} alt="صورة السؤال" className="max-h-44 rounded-lg border border-gray-200" />
+                </a>
+              )}
+              {q.question_audio_url && (
+                <div className="mt-2">
+                  <span className="text-xs text-gray-500 block mb-1">🎙️ السؤال (صوتي):</span>
+                  <audio controls className="w-full max-w-sm" preload="none"><source src={q.question_audio_url} /></audio>
+                </div>
+              )}
+
+              {(q.answer || q.audio_url || q.answer_image_url) ? (
+                <div className="border-t border-gray-100 pt-3 mt-3 space-y-2">
+                  {q.answer && (
+                    <p className="text-gray-700 text-sm leading-loose whitespace-pre-line">
+                      <span className="font-semibold text-yellow-600 ml-1">ج:</span>
+                      <Linkify text={q.answer} />
+                    </p>
+                  )}
+                  {q.audio_url && (
+                    <div>
+                      {!q.answer && <span className="font-semibold text-yellow-600 text-xs block mb-1">ج (صوتي):</span>}
+                      <audio controls className="w-full max-w-sm" preload="none"><source src={q.audio_url} /></audio>
+                    </div>
+                  )}
+                  {q.answer_image_url && (
+                    <a href={q.answer_image_url} target="_blank" rel="noopener noreferrer" className="inline-block">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={q.answer_image_url} alt="صورة الإجابة" className="max-h-44 rounded-lg border border-gray-200" />
+                    </a>
+                  )}
                 </div>
               ) : (
                 <p className="text-gray-400 text-xs mt-2">سيتم الرد عليك قريباً بإذن الله</p>

@@ -54,7 +54,7 @@ function ShareContent() {
     const fd = new FormData();
     fd.append("question", questionText);
     fd.append("published", String(published));
-    if (audio) fd.append("audio_url", audio);
+    if (audio) fd.append("question_audio_url", audio); // voice belongs to the QUESTION here
     if (image) fd.append("image_url", image);
     const res = await fetch("/api/qa", { method: "POST", body: fd });
     setSaving(false);

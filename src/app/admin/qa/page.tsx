@@ -434,6 +434,15 @@ function QARow({ item, sections, editId, editQuestion, editAnswer, editSectionId
     });
     onRefresh();
   }
+
+  async function removeQuestionAudio() {
+    await fetch(`/api/qa/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question_audio_url: null }),
+    });
+    onRefresh();
+  }
   const sectionName = sections.find((s) => s.id === item.section_id)?.title;
   const sourceColor: Record<string, string> = {
     website: "bg-green-50 text-green-600",
@@ -453,6 +462,18 @@ function QARow({ item, sections, editId, editQuestion, editAnswer, editSectionId
               <img src={item.image_url} alt="صورة السؤال"
                 className="max-h-40 rounded-lg border border-gray-200 hover:opacity-90 transition-opacity" />
             </a>
+          )}
+          {item.question_audio_url && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-xs text-gray-500 shrink-0">🎙️ السؤال:</span>
+              <audio controls className="h-8 max-w-[240px]" preload="none">
+                <source src={item.question_audio_url} />
+              </audio>
+              {isEditing && (
+                <button type="button" onClick={() => removeQuestionAudio()}
+                  className="text-red-400 hover:text-red-600 text-xs shrink-0">إزالة</button>
+              )}
+            </div>
           )}
           {item.submitter_name && <p className="text-xs text-gray-400 mt-0.5">من: {item.submitter_name}</p>}
         </div>

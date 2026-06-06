@@ -52,6 +52,7 @@ export default function QAList({ items }: { items: QA[] }) {
               >
                 <span className="font-semibold text-green-900 text-base leading-relaxed flex items-center gap-1.5">
                   {q.image_url && <span title="يحتوي على صورة">📷</span>}
+                  {q.question_audio_url && <span title="يحتوي على تسجيل صوتي">🎙️</span>}
                   <span><Linkify text={q.question} /></span>
                 </span>
                 <svg
@@ -62,7 +63,7 @@ export default function QAList({ items }: { items: QA[] }) {
                 </svg>
               </div>
 
-              {openId === q.id && (q.answer || q.audio_url || q.image_url || q.answer_image_url) && (
+              {openId === q.id && (q.answer || q.audio_url || q.image_url || q.answer_image_url || q.question_audio_url) && (
                 <div className="px-5 pb-5 border-t border-gray-100">
                   <div className="pt-4">
                     {q.image_url && (
@@ -72,6 +73,17 @@ export default function QAList({ items }: { items: QA[] }) {
                         <img src={q.image_url} alt="صورة السؤال"
                           className="max-h-72 rounded-xl border border-gray-200 hover:opacity-90 transition-opacity" />
                       </a>
+                    )}
+                    {q.question_audio_url && (
+                      <div className="mb-4">
+                        <span className="font-semibold text-green-700 text-sm block mb-2">🎙️ السؤال (صوتي):</span>
+                        <audio controls className="w-full max-w-md" preload="none">
+                          <source src={q.question_audio_url} />
+                        </audio>
+                      </div>
+                    )}
+                    {(q.answer || q.audio_url || q.answer_image_url) && (q.image_url || q.question_audio_url) && (
+                      <div className="border-t border-dashed border-gray-200 my-4" />
                     )}
                     {q.answer && (
                       <p className="text-gray-700 text-base leading-loose whitespace-pre-line">
