@@ -33,9 +33,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Write YouTube cookies (optional, fixes bot-checks)
+        env:
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+        run: |
+          if [ -n "$YT_COOKIES" ]; then printf '%s' "$YT_COOKIES" > cookies.txt; echo "cookies.txt written ($(wc -l < cookies.txt) lines)"; else echo "no YT_COOKIES secret set"; fi
+
       - name: Fetch transcripts
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TRANSCRIPT_BATCH: ${{ github.event.inputs.batch || '40' }}
+          YTDLP_BIN: python
+          YTDLP_PRE: "-m yt_dlp"
         run: node scripts/fetch-transcripts.mjs

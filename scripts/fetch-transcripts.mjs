@@ -10,17 +10,26 @@
 import { createClient } from "@supabase/supabase-js";
 import { execFileSync } from "node:child_process";
 import { readFile, readdir, rm, mkdtemp } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const BATCH = parseInt(process.env.TRANSCRIPT_BATCH || "40", 10);
+const parsedBatch = parseInt(process.env.TRANSCRIPT_BATCH || "40", 10);
+const BATCH = Number.isFinite(parsedBatch) && parsedBatch > 0 ? Math.min(parsedBatch, 200) : 40;
+
+// How to invoke yt-dlp. On CI we run it as a python module to avoid PATH issues:
+//   YTDLP_BIN=python  YTDLP_PRE="-m yt_dlp"
+const YTDLP_BIN = process.env.YTDLP_BIN || "yt-dlp";
+const YTDLP_PRE = (process.env.YTDLP_PRE || "").split(" ").filter(Boolean);
+const COOKIES = existsSync("cookies.txt") ? ["--cookies", "cookies.txt"] : [];
 
 if (!SUPABASE_URL || !KEY) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   process.exit(1);
 }
+console.log(`yt-dlp via: ${YTDLP_BIN} ${YTDLP_PRE.join(" ")} | cookies: ${COOKIES.length ? "yes" : "no"}`);
 
 const supabase = createClient(SUPABASE_URL, KEY, { auth: { persistSession: false } });
 
@@ -69,10 +78,14 @@ async function main() {
   for (const v of videos) {
     const dir = await mkdtemp(path.join(os.tmpdir(), "sub-"));
     try {
-      execFileSync("yt-dlp", [
+      execFileSync(YTDLP_BIN, [
+        ...YTDLP_PRE,
         "--skip-download", "--write-auto-subs", "--write-subs",
         "--sub-langs", "ar", "--sub-format", "vtt",
+        ...COOKIES,
         "--no-warnings", "--no-progress", "--retries", "3", "--socket-timeout", "30",
+        "--sleep-requests", "1",
+        "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
         "-o", path.join(dir, "v.%(ext)s"),
         `https://www.youtube.com/watch?v=${v.youtube_id}`,
       ], { stdio: ["ignore", "ignore", "pipe"], timeout: 120000 });
