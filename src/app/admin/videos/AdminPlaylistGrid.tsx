@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { Playlist } from "@/lib/supabase";
+import SearchResults, { type SearchPlaylist, type SearchVideo } from "@/components/SearchResults";
 
 interface Video {
   id: string;
@@ -18,9 +19,30 @@ export default function AdminPlaylistGrid({ playlists }: { playlists: Playlist[]
   const [videos, setVideos] = useState<Record<string, Video[]>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const filtered = search.trim()
-    ? playlists.filter((p) => p.title.includes(search) || p.description?.includes(search))
-    : playlists;
+  // Global search (playlists + videos + transcripts)
+  const query = search.trim();
+  const [results, setResults] = useState<{ playlists: SearchPlaylist[]; videos: SearchVideo[] }>({ playlists: [], videos: [] });
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (!query) { setResults({ playlists: [], videos: [] }); setSearching(false); return; }
+    setSearching(true);
+    let active = true;
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        if (active) setResults({ playlists: data.playlists ?? [], videos: data.videos ?? [] });
+      } catch {
+        if (active) setResults({ playlists: [], videos: [] });
+      } finally {
+        if (active) setSearching(false);
+      }
+    }, 350);
+    return () => { active = false; clearTimeout(t); };
+  }, [query]);
+
+  const filtered = playlists;
 
   async function toggleExpand(pl: Playlist) {
     const plId = pl.youtube_playlist_id;
@@ -55,11 +77,13 @@ export default function AdminPlaylistGrid({ playlists }: { playlists: Playlist[]
             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="ابحث في قوائم التشغيل..."
+          placeholder="ابحث في القوائم والمقاطع وداخل النصوص..."
           className="w-full border border-gray-200 rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white" />
       </div>
 
-      {filtered.length === 0 ? (
+      {query ? (
+        <SearchResults playlists={results.playlists} videos={results.videos} loading={searching} query={query} />
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           {search ? "لا توجد نتائج" : "لا توجد قوائم تشغيل — اضغط \"مزامنة قوائم التشغيل\""}
         </div>

@@ -1,35 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SearchInput from "@/components/SearchInput";
+import SearchResults, { type SearchPlaylist, type SearchVideo } from "@/components/SearchResults";
 import type { Playlist } from "@/lib/supabase";
 
 export default function PlaylistGrid({ playlists }: { playlists: Playlist[] }) {
   const [search, setSearch] = useState("");
+  const [results, setResults] = useState<{ playlists: SearchPlaylist[]; videos: SearchVideo[] }>({ playlists: [], videos: [] });
+  const [loading, setLoading] = useState(false);
 
-  const filtered = search.trim()
-    ? playlists.filter((p) =>
-        p.title.includes(search) || p.description?.includes(search)
-      )
-    : playlists;
+  const query = search.trim();
+
+  // Debounced global search across playlists + videos + transcripts
+  useEffect(() => {
+    if (!query) { setResults({ playlists: [], videos: [] }); setLoading(false); return; }
+    setLoading(true);
+    let active = true;
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        if (active) setResults({ playlists: data.playlists ?? [], videos: data.videos ?? [] });
+      } catch {
+        if (active) setResults({ playlists: [], videos: [] });
+      } finally {
+        if (active) setLoading(false);
+      }
+    }, 350);
+    return () => { active = false; clearTimeout(t); };
+  }, [query]);
 
   return (
     <>
       <div className="mb-6">
-        <SearchInput value={search} onChange={setSearch} placeholder="ابحث في قوائم التشغيل..." />
+        <SearchInput value={search} onChange={setSearch} placeholder="ابحث في القوائم والمقاطع وداخل نصوص الدروس..." />
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <p className="text-lg font-medium">{search ? `لا توجد نتائج لـ "${search}"` : "لا توجد قوائم تشغيل"}</p>
-        </div>
+      {query ? (
+        <SearchResults playlists={results.playlists} videos={results.videos} loading={loading} query={query} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filtered.map((pl) => (
-            <PlaylistCard key={pl.id} playlist={pl} />
-          ))}
+          {playlists.map((pl) => <PlaylistCard key={pl.id} playlist={pl} />)}
         </div>
       )}
     </>
