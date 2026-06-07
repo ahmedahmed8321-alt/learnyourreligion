@@ -49,6 +49,12 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-islamic-pattern opacity-20" />
         <div className="absolute inset-0 bg-radial-gradient from-green-700/30 to-transparent" />
 
+        {/* Decorative layer */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] max-w-full h-[340px] bg-yellow-400/10 blur-[110px] rounded-full pointer-events-none" />
+        <MihrabArch className="absolute top-5 left-1/2 -translate-x-1/2 w-[470px] max-w-[92%] h-auto opacity-70 pointer-events-none hidden sm:block" />
+        <Lantern className="absolute -top-1 right-5 md:right-20 w-9 md:w-12 h-auto pointer-events-none hidden sm:block" style={{ filter: "drop-shadow(0 0 14px rgba(245,158,11,0.55))" }} />
+        <Lantern className="absolute -top-1 left-5 md:left-20 w-9 md:w-12 h-auto pointer-events-none hidden sm:block" style={{ filter: "drop-shadow(0 0 14px rgba(245,158,11,0.55))" }} />
+
         <div className="relative z-10 max-w-4xl mx-auto px-4 py-16 md:py-20 text-center">
           <div className="relative inline-block mb-6">
             <div className="absolute inset-0 rounded-full bg-yellow-400/30 blur-xl scale-110" />
@@ -260,6 +266,55 @@ function EmptyState({ message }: { message: string }) {
     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-12 text-center text-gray-400 text-sm">
       {message}
     </div>
+  );
+}
+
+function MihrabArch({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 400 440" className={className} fill="none" preserveAspectRatio="xMidYMin meet" aria-hidden>
+      <defs>
+        <linearGradient id="archG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fbbf24" stopOpacity="0.55" />
+          <stop offset="0.75" stopColor="#fbbf24" stopOpacity="0.1" />
+          <stop offset="1" stopColor="#fbbf24" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* Pointed (ogee) mihrab arch */}
+      <path d="M40 440 V165 C40 60 200 70 200 18 C200 70 360 60 360 165 V440" stroke="url(#archG)" strokeWidth="2" />
+      <path d="M72 440 V175 C72 80 200 90 200 46 C200 90 328 80 328 175 V440" stroke="url(#archG)" strokeWidth="1" opacity="0.6" />
+      {/* small finial at apex */}
+      <circle cx="200" cy="14" r="3" fill="#fbbf24" opacity="0.6" />
+    </svg>
+  );
+}
+
+function Lantern({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 60 150" className={className} style={style} fill="none" aria-hidden>
+      <defs>
+        <linearGradient id="goldL" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fde68a" />
+          <stop offset="0.5" stopColor="#f59e0b" />
+          <stop offset="1" stopColor="#b45309" />
+        </linearGradient>
+        <radialGradient id="glowL" cx="0.5" cy="0.55" r="0.5">
+          <stop offset="0" stopColor="#fffbeb" stopOpacity="0.95" />
+          <stop offset="1" stopColor="#f59e0b" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {/* chain */}
+      <line x1="30" y1="0" x2="30" y2="26" stroke="url(#goldL)" strokeWidth="2" />
+      <path d="M22 30 h16 l-3 -5 h-10 z" fill="url(#goldL)" />
+      {/* body */}
+      <path d="M18 34 q12 -7 24 0 v46 q-12 11 -24 0 z" fill="url(#goldL)" />
+      {/* inner glow / candle */}
+      <ellipse cx="30" cy="58" rx="11" ry="20" fill="url(#glowL)" />
+      {/* lattice */}
+      <path d="M24 38 v44 M30 36 v48 M36 38 v44" stroke="#7c2d12" strokeWidth="0.7" opacity="0.45" />
+      {/* finial */}
+      <path d="M26 84 h8 l-2 6 h-4 z" fill="url(#goldL)" />
+      <circle cx="30" cy="95" r="2.5" fill="url(#goldL)" />
+    </svg>
   );
 }
 
