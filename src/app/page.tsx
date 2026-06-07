@@ -71,6 +71,19 @@ export default async function HomePage() {
               <WhatsAppIcon className="w-5 h-5" /> انضم للقناة
             </a>
           </div>
+
+          {/* Global search */}
+          <form action="/search" method="GET" className="relative max-w-xl mx-auto mt-8">
+            <input name="q" type="text"
+              placeholder="ابحث في المقاطع، قوائم التشغيل، ونصوص الدروس..."
+              className="w-full rounded-full px-6 py-3.5 pl-14 text-gray-800 text-base focus:outline-none focus:ring-4 focus:ring-yellow-400/40 shadow-lg" />
+            <button type="submit" aria-label="بحث"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-green-700 text-white rounded-full p-2.5 hover:bg-green-600 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          </form>
         </div>
 
         {/* Wave separator */}
