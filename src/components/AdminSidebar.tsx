@@ -8,7 +8,8 @@ import { useState } from "react";
 const links = [
   { href: "/admin", label: "الرئيسية", icon: "⊞" },
   { href: "/admin/articles", label: "المقالات", icon: "📝" },
-  { href: "/admin/qa", label: "الأسئلة والأجوبة", icon: "💬" },
+  { href: "/admin/qa", label: "الفتاوى والأسئلة", icon: "💬" },
+  { href: "/admin/adhkar", label: "الأذكار والفوائد", icon: "📿" },
   { href: "/admin/summaries", label: "الملخصات PDF", icon: "📄" },
   { href: "/admin/videos", label: "المقاطع", icon: "▶" },
 ];

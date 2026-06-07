@@ -12,16 +12,19 @@ const publicLinks = [
   { href: "/", label: "الرئيسية" },
   { href: "/videos", label: "المقاطع" },
   { href: "/articles", label: "المقالات" },
+  { href: "/qa", label: "الفتاوى" },
+  { href: "/adhkar", label: "الأذكار" },
   { href: "/summaries", label: "ملخصات" },
-  { href: "/qa", label: "س & ج" },
+  { href: "/about", label: "عن الشيخ" },
 ];
 
 const adminLinks = [
   { href: "/admin", label: "الرئيسية" },
   { href: "/admin/videos", label: "المقاطع" },
   { href: "/admin/articles", label: "المقالات" },
+  { href: "/admin/qa", label: "الفتاوى" },
+  { href: "/admin/adhkar", label: "الأذكار" },
   { href: "/admin/summaries", label: "الملخصات" },
-  { href: "/admin/qa", label: "س & ج" },
 ];
 
 export default function Navbar() {

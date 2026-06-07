@@ -38,8 +38,10 @@ export default function Footer() {
             {[
               { href: "/videos", label: "المقاطع المرئية" },
               { href: "/articles", label: "المقالات الإسلامية" },
-              { href: "/qa", label: "الأسئلة والأجوبة" },
+              { href: "/qa", label: "الفتاوى والأسئلة" },
+              { href: "/adhkar", label: "الأذكار والفوائد" },
               { href: "/summaries", label: "الملخصات" },
+              { href: "/about", label: "عن الشيخ" },
             ].map((l) => (
               <li key={l.href}>
                 <Link href={l.href}

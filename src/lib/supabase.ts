@@ -79,6 +79,18 @@ export interface QA {
   created_at: string;
 }
 
+export interface Dhikr {
+  id: string;
+  category: string;
+  text: string;
+  reference: string | null;
+  virtue: string | null;
+  repeat_count: number;
+  order_index: number;
+  published: boolean;
+  created_at: string;
+}
+
 export interface UserNote {
   id: string;
   user_id: string;
